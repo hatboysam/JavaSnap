@@ -1,0 +1,14 @@
+# Ignore Images
+*.jpg
+
+# Mac
+.DS_Store
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+
+# Maven
+log/
+target/
