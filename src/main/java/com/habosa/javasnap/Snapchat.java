@@ -13,9 +13,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Author: samstern
@@ -30,6 +28,7 @@ public class Snapchat {
     public static final String AUTH_TOKEN_KEY = "auth_token";
     public static final String ID_KEY = "id";
     public static final String SNAPS_KEY = "snaps";
+    public static final String FRIENDS_KEY = "friends";
 
     public static final String LOGIN_PATH = "bq/login";
     public static final String UPLOAD_PATH = "ph/upload";
@@ -72,14 +71,39 @@ public class Snapchat {
     public static Snap[] getSnaps(JSONObject loginObject) {
         try {
             JSONArray snapArr = loginObject.getJSONArray(SNAPS_KEY);
-            int length = snapArr.length();
-            Snap[] result = new Snap[length];
+            List<Snap> resultList = bindArray(snapArr, Snap.class);
+            return resultList.toArray(new Snap[resultList.size()]);
+        } catch (JSONException e) {
+            return new Snap[0];
+        }
+    }
+
+    public static Friend[] getFriends(JSONObject loginObject) {
+        try {
+            JSONArray friendsArr = loginObject.getJSONArray(FRIENDS_KEY);
+            List<Friend> resultList = bindArray(friendsArr, Friend.class);
+            return resultList.toArray(new Friend[resultList.size()]);
+        } catch (JSONException e) {
+            return new Friend[0];
+        }
+    }
+
+    private static <T> List<T> bindArray(JSONArray arr, Class<? extends JSONBinder<T>> clazz) {
+        try {
+            int length = arr.length();
+            List<T> result = new ArrayList<T>();
             for (int i = 0; i < length; i++) {
-                result[i] = new Snap(snapArr.getJSONObject(i));
+                JSONObject obj = arr.getJSONObject(i);
+                T bound = clazz.newInstance().bind(obj);
+                result.add(bound);
             }
             return result;
         } catch (JSONException e) {
-            return new Snap[0];
+            return new ArrayList<T>();
+        } catch (InstantiationException e) {
+            return new ArrayList<T>();
+        } catch (IllegalAccessException e) {
+            return new ArrayList<T>();
         }
     }
 

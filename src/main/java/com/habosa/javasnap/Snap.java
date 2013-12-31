@@ -10,7 +10,7 @@ import java.util.Arrays;
  * Author: samstern
  * Date: 12/30/13
  */
-public class Snap {
+public class Snap implements JSONBinder<Snap> {
 
     public static int TYPE_IMAGE = 0;
     public static int TYPE_VIDEO = 1;
@@ -36,35 +36,39 @@ public class Snap {
     private int state;
     private int time;
 
-    public Snap(JSONObject snapObject) {
+    public Snap() { }
+
+    public Snap bind(JSONObject obj) {
         // Check for fields that always exist
         try {
-            this.id = snapObject.getString(ID_KEY);
-            this.type = snapObject.getInt(TYPE_KEY);
-            this.state = snapObject.getInt(STATE_KEY);
+            this.id = obj.getString(ID_KEY);
+            this.type = obj.getInt(TYPE_KEY);
+            this.state = obj.getInt(STATE_KEY);
         } catch (JSONException e) {
             e.printStackTrace();
-            return;
+            return this;
         }
 
         // Check sender or recipient separately
         try {
-            this.sender = snapObject.getString(SENDER_KEY);
+            this.sender = obj.getString(SENDER_KEY);
         } catch (JSONException e) {
             // Ignore
         }
         try {
-            this.recipient = snapObject.getString(RECIPENT_KEY);
+            this.recipient = obj.getString(RECIPENT_KEY);
         } catch (JSONException e) {
             // Ignore
         }
 
         // Check for time separately because it may not exist.
         try {
-            this.time = snapObject.getInt(TIME_KEY);
+            this.time = obj.getInt(TIME_KEY);
         } catch (JSONException e) {
-            return;
+            return this;
         }
+
+        return this;
     }
 
     /**
