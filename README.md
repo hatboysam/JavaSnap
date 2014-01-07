@@ -11,12 +11,12 @@ JavaSnap provides a simple Java interface to the Snapchat API, which has been un
 
 Build a `jar` with Maven using:
 
-	mvn clean compile assembly:single
+	mvn clean compile assembly:assembly
 	
 ### Command Line Execution
 Run the `jar` in `target/` with:
 
-	java -jar target/JavaSnap-1.0-SNAPSHOT-jar-with-dependencies.jar
+	java -jar target/JavaSnap-1.1-SNAPSHOT-withDependency-ShadedForAndroid.jar
 	
 It should look something like this:
 
