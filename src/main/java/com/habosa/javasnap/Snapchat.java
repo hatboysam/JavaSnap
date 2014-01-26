@@ -31,6 +31,8 @@ public class Snapchat {
     public static final String SNAPS_KEY = "snaps";
     public static final String FRIENDS_KEY = "friends";
     public static final String MEDIA_ID_KEY = "media_id";
+    public static final String CLIENT_ID_KEY = "client_id";
+    public static final String CAPTION_TEXT_DISPLAY_KEY = "caption_text_display";
     public static final String TYPE_KEY = "type";
     public static final String DATA_KEY = "data";
     public static final String ZIPPED_KEY = "zipped";
@@ -43,6 +45,8 @@ public class Snapchat {
     public static final String LOGIN_PATH = "bq/login";
     public static final String UPLOAD_PATH = "bq/upload";
     public static final String SEND_PATH = "ph/send";
+    public static final String STORY_PATH = "bg/post_story";
+    public static final String DOUBLE_PATH = "bq/double_post";
     public static final String BLOB_PATH = "ph/blob";
 
     /**
@@ -218,12 +222,13 @@ public class Snapchat {
      *
      * @param mediaId the media_id of the uploaded snap.
      * @param recipients a list of Snapchat usernames to send to.
+     * @param story true if this should be uploaded to the sender's story as well.
      * @param time the time (max 10) for which this snap should be visible.
      * @param username your Snapchat username.
      * @param authToken your Snapchat auth_token from logging in.
      * @return true if successful, false otherwise.
      */
-    public static boolean send(String mediaId, List<String> recipients, int time, String username, String authToken) {
+    public static boolean send(String mediaId, List<String> recipients, boolean story, int time, String username, String authToken) {
         // Prepare parameters
         Long timestamp = getTimestamp();
         String requestToken = TokenLib.requestToken(authToken, timestamp);
@@ -255,10 +260,21 @@ public class Snapchat {
         params.put(RECIPIENT_KEY, recipString);
         params.put(ZIPPED_KEY, "0");
 
+        // Sending path
+        String path = SEND_PATH;
+
+        // Add to story, maybe
+        if (story) {
+            path = DOUBLE_PATH;
+            params.put(CAPTION_TEXT_DISPLAY_KEY, "My Story");
+            params.put(CLIENT_ID_KEY, mediaId);
+            params.put(TYPE_KEY, "0");
+        }
+
         // Execute request
         try {
-            HttpResponse<String> resp = requestString(SEND_PATH, params, null);
-            if (resp.getCode() == 200) {
+            HttpResponse<String> resp = requestString(path, params, null);
+            if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
             } else {
                 return false;

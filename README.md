@@ -76,7 +76,8 @@ If that succeeds, use the following code to send it:
 	recipients.add("somebodyElse123");
 	
 	int viewTime = 10; //seconds
-	boolean result = Snapchat.send(mediaId, recipients, viewTime, username, authToken);
+	boolean myStory = false; // add to story, or not
+	boolean result = Snapchat.send(mediaId, recipients, myStory, viewTime, username, authToken);
 
 ## Other Information
 

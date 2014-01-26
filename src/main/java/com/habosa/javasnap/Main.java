@@ -53,7 +53,7 @@ public class Main {
                 break;
             default:
                 System.out.println("Invalid option.");
-                return;
+                break;
         }
 
     }
@@ -89,9 +89,11 @@ public class Main {
         recipients.add(recipient);
 
         // Send and print
-        // TODO(samstern): User-specified time, not automatically 10 seconds
         System.out.println("Sending...");
-        boolean result = Snapchat.send(medId, recipients, 10, username, token);
+        boolean postStory = false;
+
+        // TODO(samstern): User-specified time, not automatically 10 seconds
+        boolean result = Snapchat.send(medId, recipients, postStory, 10, username, token);
         if (result) {
             System.out.println("Sent.");
         } else {
