@@ -20,6 +20,13 @@ import java.util.*;
 public class Snapchat {
 
     /**
+     * Last response received.  Used for error reporting.
+     */
+    public static String lastRequestPath;
+    public static HttpResponse lastResponse;
+    public static Class lastResponseBodyClass;
+
+    /**
      * POST parameter keys for sending requests to Snapchat.
      */
     public static final String USERNAME_KEY = "username";
@@ -55,6 +62,8 @@ public class Snapchat {
     public static final String BASE_URL = "https://feelinsonice-hrd.appspot.com/";
     private static final String JSON_TYPE_KEY = "accept";
     private static final String JSON_TYPE = "application/json";
+    private static final String USER_AGENT_KEY = "User-Agent";
+    private static final String USER_AGENT = "Snapchat/3.0.2 (Nexus 4; Android 18; gzip)";
 
     /**
      * Log in to Snapchat.
@@ -310,6 +319,12 @@ public class Snapchat {
 
         // Execute and return response as JSON
         HttpResponse<JsonNode> resp = req.asJson();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = JsonNode.class;
+
         return resp;
     }
 
@@ -318,6 +333,12 @@ public class Snapchat {
 
         // Execute and return response as String
         HttpResponse<String> resp = req.asString();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = String.class;
+
         return resp;
     }
 
@@ -326,16 +347,23 @@ public class Snapchat {
 
         // Execute and return as bytes
         HttpResponse<InputStream> resp = req.asBinary();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = InputStream.class;
+
         return resp;
     }
 
     private static MultipartBody prepareRequest(String path, Map<String, Object> params, File file) {
-        // Set up a JSON requestJson
+        // Set up a JSON request
         MultipartBody req = Unirest.post(BASE_URL + path)
                 .header(JSON_TYPE_KEY, JSON_TYPE)
+                .header(USER_AGENT_KEY, USER_AGENT)
                 .fields(params);
 
-        // Add file
+        // Add file if there is one
         if (file != null) {
             return req.field(DATA_KEY, file);
         }
