@@ -22,10 +22,12 @@ public class Encryption {
         // Get AES-ECB with the right padding
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(CIPHER_MODE);
+            cipher = Cipher.getInstance(CIPHER_MODE, "BC");
         } catch (NoSuchAlgorithmException e) {
             throw new EncryptionException(e);
         } catch (NoSuchPaddingException e) {
+            throw new EncryptionException(e);
+        } catch (NoSuchProviderException e) {
             throw new EncryptionException(e);
         }
 
@@ -55,10 +57,12 @@ public class Encryption {
 
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(CIPHER_MODE);
+            cipher = Cipher.getInstance(CIPHER_MODE, "BC");
         } catch (NoSuchAlgorithmException e) {
             throw new EncryptionException(e);
         } catch (NoSuchPaddingException e) {
+            throw new EncryptionException(e);
+        } catch (NoSuchProviderException e) {
             throw new EncryptionException(e);
         }
 

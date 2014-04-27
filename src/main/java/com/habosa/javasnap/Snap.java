@@ -6,10 +6,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * Author: samstern
- * Date: 12/30/13
- */
 public class Snap implements JSONBinder<Snap> {
 
     public static int TYPE_IMAGE = 0;
@@ -28,6 +24,8 @@ public class Snap implements JSONBinder<Snap> {
     private static final String TYPE_KEY = "m";
     private static final String STATE_KEY = "st";
     private static final String TIME_KEY = "t";
+    private static final String SENTTIME_KEY = "sts";
+    private static final String CAPTION_KEY = "caption_text_display";
 
     private String id;
     private String sender;
@@ -35,6 +33,9 @@ public class Snap implements JSONBinder<Snap> {
     private int type;
     private int state;
     private int time;
+    private int senttime;
+    
+    private String caption;
 
     public Snap() { }
 
@@ -44,6 +45,7 @@ public class Snap implements JSONBinder<Snap> {
             this.id = obj.getString(ID_KEY);
             this.type = obj.getInt(TYPE_KEY);
             this.state = obj.getInt(STATE_KEY);
+            this.senttime = obj.getInt(SENTTIME_KEY);
         } catch (JSONException e) {
             e.printStackTrace();
             return this;
@@ -55,10 +57,17 @@ public class Snap implements JSONBinder<Snap> {
         } catch (JSONException e) {
             // Ignore
         }
+        
         try {
-            this.recipient = obj.getString(RECIPENT_KEY);
+            this.sender = obj.getString(SENDER_KEY);
         } catch (JSONException e) {
             // Ignore
+        }
+        
+        try {
+            this.caption = obj.getString(CAPTION_KEY);
+        } catch (JSONException e) {
+            this.caption = "";
         }
 
         // Check for time separately because it may not exist.
@@ -156,6 +165,14 @@ public class Snap implements JSONBinder<Snap> {
     public int getTime() {
         return time;
     }
+    
+    public int getSentTime() {
+        return senttime;
+    }
+
+    public String getCaption() {
+        return caption;
+    }
 
     @Override
     public String toString() {
@@ -165,7 +182,9 @@ public class Snap implements JSONBinder<Snap> {
                 recipient,
                 Integer.toString(type),
                 Integer.toString(state),
-                Integer.toString(time)
+                Integer.toString(time),
+                Integer.toString(senttime),
+                caption
         };
         return Arrays.toString(attrs);
     }

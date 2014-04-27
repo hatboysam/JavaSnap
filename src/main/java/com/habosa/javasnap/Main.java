@@ -36,6 +36,7 @@ public class Main {
         System.out.println("Choose an option:");
         System.out.println("\t1) Download un-viewed snaps");
         System.out.println("\t2) Send a snap");
+        System.out.println("\t3) List friends Stories");
         System.out.println();
 
         int option = scanner.nextInt();
@@ -50,6 +51,18 @@ public class Main {
                 System.out.println("Enter recipient Snapchat username:");
                 String recipient = scanner.nextLine();
                 sendSnap(username, recipient, fileName, token);
+                break;
+            case 3:
+                Story[] storyObjs = Snapchat.getStories(username, token);
+                Story[] downloadable = Story.filterDownloadable(storyObjs);
+                for (Story s : downloadable) {
+                  System.out.println(s.getSender() + "_" + s.getId() + ".jpg");
+                  byte[] storyBytes = Snapchat.getStory(s, username, token);
+                  File storyFile = new File(s.getSender() + "-" + s.getId() + ".jpg");
+                  FileOutputStream storyOs = new FileOutputStream(storyFile);
+                  storyOs.write(storyBytes);
+                  storyOs.close();
+                }
                 break;
             default:
                 System.out.println("Invalid option.");
@@ -82,7 +95,7 @@ public class Main {
 
         // Try uploading a file
         File file = new File(filename);
-        String medId = Snapchat.upload(file, username, token);
+        String medId = Snapchat.upload(file, username, token, false);
 
         // Try sending it
         List<String> recipients = new ArrayList<String>();
