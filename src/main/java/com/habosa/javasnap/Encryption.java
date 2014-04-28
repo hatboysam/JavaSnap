@@ -22,11 +22,18 @@ public class Encryption {
         // Get AES-ECB with the right padding
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(CIPHER_MODE);
+            cipher = Cipher.getInstance(CIPHER_MODE, "BC"); //Try and use the BC provider for devices which throw key length errors.
         } catch (NoSuchAlgorithmException e) {
             throw new EncryptionException(e);
         } catch (NoSuchPaddingException e) {
             throw new EncryptionException(e);
+        } catch (NoSuchProviderException e) {
+            try{
+              cipher = Cipher.getInstance(CIPHER_MODE); //Use this if BC provider not found.
+            }
+            catch(Exception er){
+              throw new EncryptionException(er);
+            }
         }
 
         // Set the key
@@ -55,11 +62,18 @@ public class Encryption {
 
         Cipher cipher = null;
         try {
-            cipher = Cipher.getInstance(CIPHER_MODE);
+            cipher = Cipher.getInstance(CIPHER_MODE, "BC"); //Try and use the BC provider for devices which throw key length errors.
         } catch (NoSuchAlgorithmException e) {
             throw new EncryptionException(e);
         } catch (NoSuchPaddingException e) {
             throw new EncryptionException(e);
+        } catch (NoSuchProviderException e) {
+            try{
+              cipher = Cipher.getInstance(CIPHER_MODE); //Use this if BC provider not found.
+            }
+            catch(Exception er){
+              throw new EncryptionException(er);
+            }
         }
 
         byte[] keyBytes = AES_KEY.getBytes();
