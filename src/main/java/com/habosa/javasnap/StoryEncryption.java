@@ -19,9 +19,6 @@ public class StoryEncryption {
 
     public static byte[] decrypt(byte[] storyData, String MediaKey, String MediaIV) {
     
-        System.out.println("MediaKey: " + MediaKey);
-        System.out.println("MediaIV: " + MediaIV);
-    
         byte[] key = Base64.decodeBase64(MediaKey.getBytes());
         byte[] iv = Base64.decodeBase64(MediaIV.getBytes());
         
@@ -41,10 +38,9 @@ public class StoryEncryption {
         
         byte[] decrypted = null;
         try {
-          //cipher.init(Cipher.DECRYPT_MODE, keyspec, ivspec);
           cipher.init(Cipher.DECRYPT_MODE, keyspec, ivspec);
           decrypted = cipher.doFinal(storyData);
-          //Remove trailing zeroes
+          //Remove trailing zeroes, don't need this?
           /*
           if( decrypted.length > 0){
             int trim = 0;

@@ -128,12 +128,6 @@ public class Snapchat {
             
             JSONArray storiesArray = new JSONArray();
             
-            //System.out.println(storyArr);
-            //System.out.println(storyArr.getJSONObject(0).getJSONArray("stories").getJSONObject(0).getJSONObject("story"));
-            //storiesArray.put(storyArr.getJSONObject(0).getJSONArray("stories").getJSONObject(0).getJSONObject("story"));
-            //System.out.println(storyArr.getJSONObject(1));
-            
-            
             for (int i=0; i<storyArr.length(); i++) {
               JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
               for (int j=0; j<items.length(); j++) {
@@ -142,17 +136,6 @@ public class Snapchat {
               }
             }
             
-            
-            /*
-            for(JSONObject jObj : storyArr){
-              JSONArray storiesArr = jObj.getJSONArray("stories");
-              for(JSONObject a : storiesArr){
-                storiesArray.put(a.getJSONObject("story"));
-              }
-            }
-            */
-            
-            //List<Story> resultList = bindArray(storyArr, Story.class);
             List<Story> resultList = bindArray(storiesArray, Story.class);
             return resultList.toArray(new Story[resultList.size()]);
         } catch (Exception e) {
@@ -302,10 +285,6 @@ public class Snapchat {
             else{
               params.put(TYPE_KEY, 0);
             }
-            System.out.println("REQUEST USERNAME: " + username);
-            System.out.println("REQUEST TIMESTAMP: " + timestamp);
-            System.out.println("REQUEST TOKEN: " + requestToken);
-            System.out.println("REQUEST MEDIA-ID: " + mediaId);
 
             // Perform request and check for 200
             HttpResponse<String> resp = requestString(UPLOAD_PATH, params, encryptedFile);
