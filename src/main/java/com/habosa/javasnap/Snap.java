@@ -59,7 +59,7 @@ public class Snap implements JSONBinder<Snap> {
         }
         
         try {
-            this.sender = obj.getString(SENDER_KEY);
+            this.recipient = obj.getString(RECIPENT_KEY);
         } catch (JSONException e) {
             // Ignore
         }
