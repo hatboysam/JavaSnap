@@ -11,6 +11,10 @@ public class Snap implements JSONBinder<Snap> {
     public static int TYPE_IMAGE = 0;
     public static int TYPE_VIDEO = 1;
     public static int TYPE_VIDEO_NOAUDIO = 2;
+    public static int TYPE_FRIEND_REQUEST = 3;
+    public static int TYPE_FRIEND_REQUEST_IMAGE = 4;
+    public static int TYPE_FRIEND_REQUEST_VIDEO = 5;
+    public static int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 5;
 
     public static int NONE = -1;
     public static int SENT = 0;
@@ -140,6 +144,10 @@ public class Snap implements JSONBinder<Snap> {
      */
     public boolean isIncoming() {
         return (id.endsWith("r"));
+    }
+
+    public boolean isFriendRequest(){
+        return (type == TYPE_FRIEND_REQUEST || type == TYPE_FRIEND_REQUEST_IMAGE || type == TYPE_FRIEND_REQUEST_VIDEO || type == TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO);
     }
 
     public String getId() {
