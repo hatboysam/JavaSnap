@@ -74,6 +74,19 @@ public class Snapchat {
     private static final String JSON_TYPE = "application/json";
     private static final String USER_AGENT_KEY = "User-Agent";
     private static final String USER_AGENT = "Snapchat/3.0.2 (Nexus 4; Android 18; gzip)";
+    
+    /**
+     * Local variables
+     */
+    private JSONObject loginObj;
+    
+    /**
+     * Build the Snapchat object
+     * @see login
+     */
+    private Snapchat(JSONObject loginObj){
+        this.loginObj = loginObj;
+    }
 
     /**
      * Log in to Snapchat.
@@ -82,7 +95,7 @@ public class Snapchat {
      * @param password the Snapchat password.
      * @return the entire JSON login response.
      */
-    public static JSONObject login(String username, String password) {
+    public static Snapchat login(String username, String password) {
         Map<String, Object> params = new HashMap<String, Object>();
 
         // Add username and password
@@ -99,8 +112,9 @@ public class Snapchat {
         try {
             HttpResponse<JsonNode> resp = requestJson(LOGIN_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
-            return obj;
+            return new Snapchat(obj);
         } catch (UnirestException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -108,20 +122,18 @@ public class Snapchat {
     /**
      * Get Friends Stories from Snapchat. Added by Liam Cottle.
      *
-     * @param username the Snapchat username.
-     * @param authToken the authToken from Loggin in.
      * @return a Story[].
      *
     */
     
-    public static Story[] getStories(String username, String authToken) {
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put(USERNAME_KEY, username);
-        Long timestamp = getTimestamp();
-        params.put(TIMESTAMP_KEY, timestamp);
-        params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
-
+    public Story[] getStories() {
         try {
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, this.loginObj.getString(Snapchat.USERNAME_KEY));
+            Long timestamp = getTimestamp();
+            params.put(TIMESTAMP_KEY, timestamp);
+            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY), timestamp));
+                    
             HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
             JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
@@ -138,20 +150,21 @@ public class Snapchat {
             
             List<Story> resultList = bindArray(storiesArray, Story.class);
             return resultList.toArray(new Story[resultList.size()]);
-        } catch (Exception e) {
+        } catch (UnirestException e) {
           return new Story[0];
+        } catch (JSONException ex) {
+            return new Story[0];
         }
     }
 
     /**
      * Get an array of your Snap objects.
      *
-     * @param loginObject the JSONObject received after login().
      * @return a Snap[].
      */
-    public static Snap[] getSnaps(JSONObject loginObject) {
+    public Snap[] getSnaps() {
         try {
-            JSONArray snapArr = loginObject.getJSONArray(SNAPS_KEY);
+            JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
             List<Snap> resultList = bindArray(snapArr, Snap.class);
             return resultList.toArray(new Snap[resultList.size()]);
         } catch (JSONException e) {
@@ -162,12 +175,11 @@ public class Snapchat {
     /**
      * Get an array of your Friend objects.
      *
-     * @param loginObject the JSONObject received after login().
      * @return a Friend[].
      */
-    public static Friend[] getFriends(JSONObject loginObject) {
+    public Friend[] getFriends() {
         try {
-            JSONArray friendsArr = loginObject.getJSONArray(FRIENDS_KEY);
+            JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
             List<Friend> resultList = bindArray(friendsArr, Friend.class);
             return resultList.toArray(new Friend[resultList.size()]);
         } catch (JSONException e) {
@@ -198,19 +210,17 @@ public class Snapchat {
      * Download and un-encrypt a Snap from the server.
      *
      * @param snap the Snap to download.
-     * @param username your Snapchat username.
-     * @param authToken the auth_token you got from logging in.
      * @return a byte[] containing decrypted image or video data.
      */
-    public static byte[] getSnap(Snap snap, String username, String authToken) {
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put(USERNAME_KEY, username);
-        Long timestamp = getTimestamp();
-        params.put(TIMESTAMP_KEY, timestamp);
-        params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
-        params.put(ID_KEY, snap.getId());
-
+    public byte[] getSnap(Snap snap) {
         try {
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, this.loginObj.getString(Snapchat.USERNAME_KEY));
+            Long timestamp = getTimestamp();
+            params.put(TIMESTAMP_KEY, timestamp);
+            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY), timestamp));
+            params.put(ID_KEY, snap.getId());
+            
             HttpResponse<InputStream> resp = requestBinary(BLOB_PATH, params, null);
             InputStream is = resp.getBody();
             byte[] encryptedBytes = IOUtils.toByteArray(is);
@@ -222,6 +232,8 @@ public class Snapchat {
             return new byte[0];
         } catch (Encryption.EncryptionException e) {
             return new byte[0];
+        } catch (JSONException ex) {
+            return new byte[0];
         }
     }
 
@@ -229,11 +241,9 @@ public class Snapchat {
      * Download and un-encrypt a Story from the server. Added by Liam Cottle
      *
      * @param story the Story to download.
-     * @param username your Snapchat username.
-     * @param authToken the auth_token you got from logging in.
      * @return a byte[] containing decrypted image or video data.
      */
-    public static byte[] getStory(Story story, String username, String authToken) {
+    public static byte[] getDecryptedStory(Story story) {
         try {
             HttpResponse<InputStream> resp = requestStoryBinary(STORY_BLOB_PATH + "?story_id=" + story.getId());
             InputStream is = resp.getBody();
@@ -251,12 +261,15 @@ public class Snapchat {
      * Upload a file and return the media_id for sending.
      *
      * @param image the image file to upload.
-     * @param username your Snapchat username.
-     * @param authToken Snapchat auth token from logging in.
+     * @param video is a video
      * @return the new upload's media_id.  Returns null if there is an error.
      */
-    public static String upload(File image, String username, String authToken, boolean video) throws FileNotFoundException {
+    public String upload(File image, boolean video) {
         try {
+            //Required variables
+            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
+            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
+            
             // Open file and ecnrypt it
             byte[] fileBytes = IOUtils.toByteArray(new FileInputStream(image));
             byte[] encryptedBytes = Encryption.encrypt(fileBytes);
@@ -303,11 +316,13 @@ public class Snapchat {
         } catch (UnirestException e) {
             System.out.println(e);
             return null;
+        } catch (JSONException e) {
+            System.out.println(e);
+            return null;
         } catch (Exception e) {
             System.out.println(e);
             return null;
-        } catch(OutOfMemoryError e)
-        {
+        } catch(OutOfMemoryError e){
             System.out.println(e);
             return null;
         }
@@ -320,55 +335,57 @@ public class Snapchat {
      * @param recipients a list of Snapchat usernames to send to.
      * @param story true if this should be uploaded to the sender's story as well.
      * @param time the time (max 10) for which this snap should be visible.
-     * @param username your Snapchat username.
-     * @param authToken your Snapchat auth_token from logging in.
      * @return true if successful, false otherwise.
      */
-    public static boolean send(String mediaId, List<String> recipients, boolean story, int time, String username, String authToken) {
-        // Prepare parameters
-        Long timestamp = getTimestamp();
-        String requestToken = TokenLib.requestToken(authToken, timestamp);
-        int snapTime = Math.min(10, time);
-
-        // Create comma-separated recipient string
-        StringBuilder sb = new StringBuilder();
-        if (recipients.size() == 0) {
-            // Can't send to nobody
-            return false;
-        }
-        sb.append(recipients.get(0));
-        for (int i = 1; i < recipients.size(); i++) {
-            String recip = recipients.get(i);
-            if (recip != null) {
-                sb.append(",");
-                sb.append(recip);
-            }
-        }
-        String recipString = sb.toString();
-
-        // Make parameter map
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put(USERNAME_KEY, username);
-        params.put(TIMESTAMP_KEY, timestamp.toString());
-        params.put(REQ_TOKEN_KEY, requestToken);
-        params.put(MEDIA_ID_KEY, mediaId);
-        params.put(TIME_KEY, Integer.toString(snapTime));
-        params.put(RECIPIENT_KEY, recipString);
-        params.put(ZIPPED_KEY, "0");
-
-        // Sending path
-        String path = SEND_PATH;
-
-        // Add to story, maybe
-        if (story) {
-            path = DOUBLE_PATH;
-            params.put(CAPTION_TEXT_DISPLAY_KEY, "My Story");
-            params.put(CLIENT_ID_KEY, mediaId);
-            params.put(TYPE_KEY, "0");
-        }
-
-        // Execute request
+    public boolean send(String mediaId, List<String> recipients, boolean story, int time) {
         try {
+            //Required variables
+            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
+            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
+
+            // Prepare parameters
+            Long timestamp = getTimestamp();
+            String requestToken = TokenLib.requestToken(authToken, timestamp);
+            int snapTime = Math.min(10, time);
+
+            // Create comma-separated recipient string
+            StringBuilder sb = new StringBuilder();
+            if (recipients.size() == 0) {
+                // Can't send to nobody
+                return false;
+            }
+            sb.append(recipients.get(0));
+            for (int i = 1; i < recipients.size(); i++) {
+                String recip = recipients.get(i);
+                if (recip != null) {
+                    sb.append(",");
+                    sb.append(recip);
+                }
+            }
+            String recipString = sb.toString();
+
+            // Make parameter map
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, requestToken);
+            params.put(MEDIA_ID_KEY, mediaId);
+            params.put(TIME_KEY, Integer.toString(snapTime));
+            params.put(RECIPIENT_KEY, recipString);
+            params.put(ZIPPED_KEY, "0");
+
+            // Sending path
+            String path = SEND_PATH;
+
+            // Add to story, maybe
+            if (story) {
+                path = DOUBLE_PATH;
+                params.put(CAPTION_TEXT_DISPLAY_KEY, "My Story");
+                params.put(CLIENT_ID_KEY, mediaId);
+                params.put(TYPE_KEY, "0");
+            }
+
+            // Execute request        
             HttpResponse<String> resp = requestString(path, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -376,6 +393,8 @@ public class Snapchat {
                 return false;
             }
         } catch (UnirestException e) {
+            return false;
+        } catch (JSONException ex) {
             return false;
         }
     }
@@ -387,35 +406,38 @@ public class Snapchat {
      *
      * @param mediaId the media_id of the uploaded snap.
      * @param time the time (max 10) for which this story should be visible.
-     * @param username your Snapchat username.
-     * @param authToken your Snapchat auth_token from logging in.
+     * @param video is video
+     * @param caption the caption
      * @return true if successful, false otherwise.
      */
-    public static boolean sendStory(String mediaId, int time, boolean video, String caption, String username, String authToken) {
-        // Prepare parameters
-        Long timestamp = getTimestamp();
-        String requestToken = TokenLib.requestToken(authToken, timestamp);
-        int snapTime = Math.min(10, time);
-
-        // Make parameter map
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put(USERNAME_KEY, username);
-        params.put(TIMESTAMP_KEY, timestamp.toString());
-        params.put(REQ_TOKEN_KEY, requestToken);
-        params.put(MEDIA_ID_KEY, mediaId);
-        params.put(CLIENT_ID_KEY, mediaId);
-        params.put(TIME_KEY, Integer.toString(snapTime));
-        params.put(CAPTION_TEXT_DISPLAY_KEY, caption);
-        params.put(ZIPPED_KEY, "0");
-        if(video){
-          params.put(TYPE_KEY, "1");
-        }
-        else{
-          params.put(TYPE_KEY, "0");
-        }
-        
-        // Execute request
+    public boolean sendStory(String mediaId, int time, boolean video, String caption) {
         try {
+            //Required variables
+            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
+            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
+            // Prepare parameters
+            Long timestamp = getTimestamp();
+            String requestToken = TokenLib.requestToken(authToken, timestamp);
+            int snapTime = Math.min(10, time);
+
+            // Make parameter map
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, requestToken);
+            params.put(MEDIA_ID_KEY, mediaId);
+            params.put(CLIENT_ID_KEY, mediaId);
+            params.put(TIME_KEY, Integer.toString(snapTime));
+            params.put(CAPTION_TEXT_DISPLAY_KEY, caption);
+            params.put(ZIPPED_KEY, "0");
+            if(video){
+              params.put(TYPE_KEY, "1");
+            }
+            else{
+              params.put(TYPE_KEY, "0");
+            }
+
+            // Execute request        
             HttpResponse<String> resp = requestString(STORY_PATH, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -423,6 +445,8 @@ public class Snapchat {
                 return false;
             }
         } catch (UnirestException e) {
+            return false;
+        } catch (JSONException ex) {
             return false;
         }
     }
@@ -433,62 +457,60 @@ public class Snapchat {
     /**
      * Make a change to a snap/story, eg mark it as viewed or screenshot. Added by Liam Cottle
      *
-     * @param -- stuff
      * @param snapId id of snap we are interacting with
      * @param seen boolean stating if we have seen this snap or not.
      * @param screenshot boolean stating if we have screenshot this snap or not.
      * @param replayed integer stating how many times we have replayed this snap.
-     * @param username your Snapchat username.
-     * @param authToken your Snapchat auth_token from logging in.
-     * @param loginObject used to get 'added_friends_timestamp'
      * @return true if successful, false otherwise.
      */
-    public static boolean updateSnap(String snapId, boolean seen, boolean screenshot, boolean replayed, String username, String authToken, JSONObject loginObject) {
-        // Prepare parameters
-        Long timestamp = getTimestamp();
-        String requestToken = TokenLib.requestToken(authToken, timestamp);
-        
-        int statusInt = 0;
-        int replayedInt = 0;
-        
-        if(seen){
-          statusInt = 0;
-        }
-        else if(screenshot){
-          statusInt = 1;
-        }
-        
-        if(replayed){
-          replayedInt = 1;
-        }
-        
-        String friendsTimestamp = "0";
-        try{
-          friendsTimestamp = loginObject.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
-        }
-        catch(Exception ee){
-          friendsTimestamp = timestamp.toString();
-        }
-        
-        String jsonString = "{\"" + snapId + "\":{\"c\":" + statusInt + ",\"t\":" + timestamp + ",\"replayed\":" + replayedInt + "}}";
-        
-        String eventsString = "[]";
+    public boolean updateSnap(String snapId, boolean seen, boolean screenshot, boolean replayed) {
+        try {        
+            //Required variables
+            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
+            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
+            // Prepare parameters
+            Long timestamp = getTimestamp();
+            String requestToken = TokenLib.requestToken(authToken, timestamp);
 
-        // Make parameter map
-        Map<String, Object> params = new HashMap<String, Object>();
-        params.put(USERNAME_KEY, username);
-        params.put(TIMESTAMP_KEY, timestamp.toString());
-        params.put(REQ_TOKEN_KEY, requestToken);
-        params.put(ADDED_FRIENDS_TIMESTAMP_KEY, friendsTimestamp);
-        params.put(JSON_KEY, jsonString);
-        params.put(EVENTS_KEY, eventsString);
-        //params.put(TIME_KEY, Integer.toString(snapTime));
-        
-        // Sending path
-        String path = UPDATE_SNAPS_PATH;
+            int statusInt = 0;
+            int replayedInt = 0;
 
-        // Execute request
-        try {
+            if(seen){
+              statusInt = 0;
+            }
+            else if(screenshot){
+              statusInt = 1;
+            }
+
+            if(replayed){
+              replayedInt = 1;
+            }
+
+            String friendsTimestamp = "0";
+            try {
+                friendsTimestamp = this.loginObj.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
+            } catch(Exception ee) {
+                friendsTimestamp = timestamp.toString();
+            }
+
+            String jsonString = "{\"" + snapId + "\":{\"c\":" + statusInt + ",\"t\":" + timestamp + ",\"replayed\":" + replayedInt + "}}";
+
+            String eventsString = "[]";
+
+            // Make parameter map
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, requestToken);
+            params.put(ADDED_FRIENDS_TIMESTAMP_KEY, friendsTimestamp);
+            params.put(JSON_KEY, jsonString);
+            params.put(EVENTS_KEY, eventsString);
+            //params.put(TIME_KEY, Integer.toString(snapTime));
+
+            // Sending path
+            String path = UPDATE_SNAPS_PATH;
+
+            // Execute request        
             HttpResponse<String> resp = requestString(path, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -496,6 +518,8 @@ public class Snapchat {
                 return false;
             }
         } catch (UnirestException e) {
+            return false;
+        } catch (JSONException ex) {
             return false;
         }
     }
