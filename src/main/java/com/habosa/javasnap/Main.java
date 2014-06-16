@@ -1,7 +1,5 @@
 package com.habosa.javasnap;
 
-import org.json.JSONObject;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -21,7 +19,7 @@ public class Main {
 
         // Test logging in
         System.out.println("Logging in...");
-        snapchat = Snapchat.login(username, password);
+        snapchat = Snapchat.Login(username, password);
         if (snapchat != null) {
             System.out.println("Logged in.");
         } else {
@@ -57,7 +55,7 @@ public class Main {
                 setStory(username, storyFileName);
             break;
             case 4:
-                Story[] storyObjs = snapchat.getStories();
+                Story[] storyObjs = snapchat.GetStories();
                 Story[] downloadable = Story.filterDownloadable(storyObjs);
                 for (Story s : downloadable) {
                   String extension = ".jpg";
@@ -65,7 +63,7 @@ public class Main {
                     extension = ".mp4";
                   }
                   System.out.println("Downloading story from " + s.getSender());
-                  byte[] storyBytes = Snapchat.getDecryptedStory(s);
+                  byte[] storyBytes = Snapchat.GetDecryptedStory(s);
                   File storyFile = new File(s.getSender() + "-" + s.getId() + extension);
                   FileOutputStream storyOs = new FileOutputStream(storyFile);
                   storyOs.write(storyBytes);
@@ -83,13 +81,13 @@ public class Main {
     public static void fetchSnaps() throws IOException {
         // Try fetching all snaps
         System.out.println("Fetching snaps...");
-        Snap[] snapObjs = snapchat.getSnaps();
+        Snap[] snapObjs = snapchat.GetSnaps();
         Snap[] downloadable = Snap.filterDownloadable(snapObjs);
         for (Snap s : downloadable) {
             // TODO(samstern): Support video
             if (s.isImage()) {
                 System.out.println("Downloading snap from " + s.getSender());
-                byte[] snapBytes = snapchat.getSnap(s);
+                byte[] snapBytes = snapchat.GetSnap(s);
                 File snapFile = new File(s.getSender() + "-" + s.getId() + ".jpg");
                 FileOutputStream snapOs = new FileOutputStream(snapFile);
                 snapOs.write(snapBytes);
@@ -102,9 +100,8 @@ public class Main {
     public static void sendSnap(String username, String recipient, String filename)
             throws FileNotFoundException {
 
-        // Try uploading a file
+        // Get file
         File file = new File(filename);
-        String medId = snapchat.upload(file, false);
 
         // Try sending it
         List<String> recipients = new ArrayList<String>();
@@ -115,7 +112,7 @@ public class Main {
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = snapchat.send(medId, recipients, postStory, 10);
+        boolean result = snapchat.SendSnap(file, recipients, false, postStory, 10);
         if (result) {
             System.out.println("Sent.");
         } else {
@@ -127,16 +124,15 @@ public class Main {
             throws FileNotFoundException {
 
         boolean video = false; //TODO(liamcottle) upload video snaps from command line.
-        // Try uploading a file
+        // Get file
         File file = new File(filename);
-        String medId = snapchat.upload(file, video);
 
         // Send and print
         System.out.println("Setting...");
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = snapchat.sendStory(medId, 10, video, "My Story");
+        boolean result = snapchat.SendStory(file, video, 10, "My Story");
         if (result) {
             System.out.println("Set.");
         } else {

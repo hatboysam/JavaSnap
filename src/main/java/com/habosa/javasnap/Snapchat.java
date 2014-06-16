@@ -51,6 +51,7 @@ public class Snapchat {
     public static final String ADDED_FRIENDS_TIMESTAMP_KEY = "added_friends_timestamp";
     public static final String JSON_KEY = "json";
     public static final String EVENTS_KEY = "events";
+    public static final String LOGGED_KEY = "logged";
 
     /**
      * Paths for various Snapchat actions, relative to BASE_URL.
@@ -79,13 +80,29 @@ public class Snapchat {
      * Local variables
      */
     private JSONObject loginObj;
+    private String username;
+    private String authToken;
+    private String friendsTimestamp;
+    private Friend[] friends;
+    private Story[] stories;
+    private Snap[] snaps;
+    private long lastRefreshed;
     
     /**
      * Build the Snapchat object
-     * @see login
+     * @see Snapchat#Login(String, String)
      */
     private Snapchat(JSONObject loginObj){
         this.loginObj = loginObj;
+        try {
+            this.username = loginObj.getString(USERNAME_KEY);
+            this.authToken = loginObj.getString(AUTH_TOKEN_KEY);
+            this.friendsTimestamp = loginObj.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
+            refresh();
+        } catch (JSONException e) {
+            //TODO Something is wrong with the loginObj
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -95,7 +112,7 @@ public class Snapchat {
      * @param password the Snapchat password.
      * @return the entire JSON login response.
      */
-    public static Snapchat login(String username, String password) {
+    public static Snapchat Login(String username, String password) {
         Map<String, Object> params = new HashMap<String, Object>();
 
         // Add username and password
@@ -112,64 +129,48 @@ public class Snapchat {
         try {
             HttpResponse<JsonNode> resp = requestJson(LOGIN_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
-            return new Snapchat(obj);
+            if(obj.has(LOGGED_KEY) && obj.getBoolean(LOGGED_KEY)){
+                return new Snapchat(obj);
+            }else{
+                return null;
+            }
         } catch (UnirestException e) {
+            e.printStackTrace();
+            return null;
+        } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }
     }
-    
+
     /**
-     * Get Friends Stories from Snapchat. Added by Liam Cottle.
-     *
-     * @return a Story[].
-     *
-    */
-    
-    public Story[] getStories() {
-        try {
-            Map<String, Object> params = new HashMap<String, Object>();
-            params.put(USERNAME_KEY, this.loginObj.getString(Snapchat.USERNAME_KEY));
-            Long timestamp = getTimestamp();
-            params.put(TIMESTAMP_KEY, timestamp);
-            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY), timestamp));
-                    
-            HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
-            JSONObject obj = resp.getBody().getObject();
-            JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
-            
-            JSONArray storiesArray = new JSONArray();
-            
-            for (int i=0; i<storyArr.length(); i++) {
-              JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
-              for (int j=0; j<items.length(); j++) {
-                JSONObject _story = items.getJSONObject(j).getJSONObject("story");
-                storiesArray.put(_story);
-              }
-            }
-            
-            List<Story> resultList = bindArray(storiesArray, Story.class);
-            return resultList.toArray(new Story[resultList.size()]);
-        } catch (UnirestException e) {
-          return new Story[0];
-        } catch (JSONException ex) {
-            return new Story[0];
-        }
+     * Refresh your snaps, friends, stories.
+     */
+    public void refresh() {
+        //TODO Get update. There is a better way than refreshing loginObj by relogging in.
+        //TODO : Nothing is refreshed here except stories.
+        lastRefreshed = new Date().getTime();
+        this.stories = getStories();
+        this.snaps = getSnaps();
+        this.friends = parseFriends();
     }
 
     /**
-     * Get an array of your Snap objects.
+     * Get Friends Stories from Snapchat.
+     *
+     * @return an array of Stories.
+     */
+    public Story[] GetStories(){
+        return this.stories;
+    }
+
+    /**
+     * Get your Snaps
      *
      * @return a Snap[].
      */
-    public Snap[] getSnaps() {
-        try {
-            JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
-            List<Snap> resultList = bindArray(snapArr, Snap.class);
-            return resultList.toArray(new Snap[resultList.size()]);
-        } catch (JSONException e) {
-            return new Snap[0];
-        }
+    public Snap[] GetSnaps(){
+        return this.snaps;
     }
 
     /**
@@ -177,33 +178,8 @@ public class Snapchat {
      *
      * @return a Friend[].
      */
-    public Friend[] getFriends() {
-        try {
-            JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
-            List<Friend> resultList = bindArray(friendsArr, Friend.class);
-            return resultList.toArray(new Friend[resultList.size()]);
-        } catch (JSONException e) {
-            return new Friend[0];
-        }
-    }
-
-    private static <T> List<T> bindArray(JSONArray arr, Class<? extends JSONBinder<T>> clazz) {
-        try {
-            int length = arr.length();
-            List<T> result = new ArrayList<T>();
-            for (int i = 0; i < length; i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                T bound = clazz.newInstance().bind(obj);
-                result.add(bound);
-            }
-            return result;
-        } catch (JSONException e) {
-            return new ArrayList<T>();
-        } catch (InstantiationException e) {
-            return new ArrayList<T>();
-        } catch (IllegalAccessException e) {
-            return new ArrayList<T>();
-        }
+    public Friend[] GetFriends(){
+        return this.friends;
     }
 
     /**
@@ -212,13 +188,13 @@ public class Snapchat {
      * @param snap the Snap to download.
      * @return a byte[] containing decrypted image or video data.
      */
-    public byte[] getSnap(Snap snap) {
+    public byte[] GetSnap(Snap snap) {
         try {
             Map<String, Object> params = new HashMap<String, Object>();
-            params.put(USERNAME_KEY, this.loginObj.getString(Snapchat.USERNAME_KEY));
+            params.put(USERNAME_KEY, username);
             Long timestamp = getTimestamp();
             params.put(TIMESTAMP_KEY, timestamp);
-            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY), timestamp));
+            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
             params.put(ID_KEY, snap.getId());
             
             HttpResponse<InputStream> resp = requestBinary(BLOB_PATH, params, null);
@@ -232,8 +208,6 @@ public class Snapchat {
             return new byte[0];
         } catch (Encryption.EncryptionException e) {
             return new byte[0];
-        } catch (JSONException ex) {
-            return new byte[0];
         }
     }
 
@@ -243,7 +217,7 @@ public class Snapchat {
      * @param story the Story to download.
      * @return a byte[] containing decrypted image or video data.
      */
-    public static byte[] getDecryptedStory(Story story) {
+    public static byte[] GetDecryptedStory(Story story) {
         try {
             HttpResponse<InputStream> resp = requestStoryBinary(STORY_BLOB_PATH + "?story_id=" + story.getId());
             InputStream is = resp.getBody();
@@ -258,77 +232,121 @@ public class Snapchat {
     }
 
     /**
-     * Upload a file and return the media_id for sending.
+     * Send a snap image or video
      *
-     * @param image the image file to upload.
-     * @param video is a video
-     * @return the new upload's media_id.  Returns null if there is an error.
+     * @param image the image/video file to upload.
+     * @param recipients a list of Snapchat usernames to send to.
+     * @param story true if this should be uploaded to the sender's story as well.
+     * @param video true if video, otherwise false.
+     * @param time the time (max 10) for which this snap should be visible.
+     * @return true if success, otherwise false.
      */
-    public String upload(File image, boolean video) {
+    public boolean SendSnap(File image, List<String> recipients, boolean video, boolean story, int time){
+        String upload_media_id = upload(image, video);
+        if(upload_media_id != null){
+            return send(upload_media_id, recipients, story, time);
+        }
+        return false;
+    }
+
+    /**
+     * Add a snap to your story
+     *
+     * @param image the image/video file to upload.
+     * @param video true if video, otherwise false.
+     * @param time the time (max 10) for which this story should be visible.
+     * @param caption a caption. Nobody knows what it is used for. eg. "My Story"
+     * @return true if success, otherwise false.
+     */
+    public boolean SendStory(File image, boolean video, int time, String caption){
+        String upload_media_id = upload(image, video);
+        if(upload_media_id != null){
+            return sendStory(upload_media_id, time, video, caption);
+        }
+        return false;
+    }
+
+    /**
+     * Make a change to a snap/story, eg mark it as viewed or screenshot or seen.
+     *
+     * @param snap the snap object we are interacting with
+     * @param seen boolean stating if we have seen this snap or not.
+     * @param screenshot boolean stating if we have screenshot this snap or not.
+     * @param replayed integer stating how many times we have replayed this snap.
+     * @return true if successful, false otherwise.
+     */
+    public boolean UpdateSnap(Snap snap, boolean seen, boolean screenshot, boolean replayed){
+        return updateSnap(snap, seen, screenshot, replayed);
+    }
+
+    /**
+     * ==================================================  PRIVATE NON-STATIC METHODS REGION ==================================================
+     */
+
+    /**
+     * Parses Friends from loginObj
+     * @return a Friend[]
+     */
+    private Friend[] parseFriends() {
         try {
-            //Required variables
-            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
-            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
-            
-            // Open file and ecnrypt it
-            byte[] fileBytes = IOUtils.toByteArray(new FileInputStream(image));
-            byte[] encryptedBytes = Encryption.encrypt(fileBytes);
-            
-            // Write to a temporary file
-            File encryptedFile = File.createTempFile("encr", "snap");
-            
-            FileOutputStream fos = new FileOutputStream(encryptedFile);
-            fos.write(encryptedBytes);
-            fos.close();
-
-            // Create other params
-            Long timestamp = getTimestamp();
-            String requestToken = TokenLib.requestToken(authToken, timestamp);
-            String mediaId = Snapchat.getNewMediaId(username);
-
-            // Make parameter map
-            Map<String, Object> params = new HashMap<String, Object>();
-            params.put(USERNAME_KEY, username);
-            params.put(TIMESTAMP_KEY, timestamp);
-            params.put(REQ_TOKEN_KEY, requestToken);
-            params.put(MEDIA_ID_KEY, mediaId);
-            if(video){
-              params.put(TYPE_KEY, 1);
-            }
-            else{
-              params.put(TYPE_KEY, 0);
-            }
-
-            // Perform request and check for 200
-            HttpResponse<String> resp = requestString(UPLOAD_PATH, params, encryptedFile);
-            if (resp.getCode() == 200) {
-                return mediaId;
-            } else {
-                System.out.println("Upload failed, Response Code: " + resp.getCode());
-                return null;
-            }
-        } catch (IOException e) {
-            System.out.println(e);
-            return null;
-        } catch (Encryption.EncryptionException e) {
-            System.out.println(e);
-            return null;
-        } catch (UnirestException e) {
-            System.out.println(e);
-            return null;
+            JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
+            List<Friend> resultList = bindArray(friendsArr, Friend.class);
+            return resultList.toArray(new Friend[resultList.size()]);
         } catch (JSONException e) {
-            System.out.println(e);
-            return null;
-        } catch (Exception e) {
-            System.out.println(e);
-            return null;
-        } catch(OutOfMemoryError e){
-            System.out.println(e);
-            return null;
+            return new Friend[0];
         }
     }
 
     /**
+     * Parses Snaps from loginObj
+     * @return a Snap[]
+     */
+    private Snap[] getSnaps() {
+        try {
+            JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
+            List<Snap> resultList = bindArray(snapArr, Snap.class);
+            return resultList.toArray(new Snap[resultList.size()]);
+        } catch (JSONException e) {
+            return new Snap[0];
+        }
+    }
+
+    /**
+     * Get Friends Stories from Snapchat.
+     * @return a Story[]
+     */
+    private Story[] getStories() {
+        try {
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, username);
+            Long timestamp = getTimestamp();
+            params.put(TIMESTAMP_KEY, timestamp);
+            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
+
+            HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
+            JSONObject obj = resp.getBody().getObject();
+            JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
+
+            JSONArray storiesArray = new JSONArray();
+
+            for (int i=0; i<storyArr.length(); i++) {
+                JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
+                for (int j=0; j<items.length(); j++) {
+                    JSONObject _story = items.getJSONObject(j).getJSONObject("story");
+                    storiesArray.put(_story);
+                }
+            }
+
+            List<Story> resultList = bindArray(storiesArray, Story.class);
+            return resultList.toArray(new Story[resultList.size()]);
+        } catch (UnirestException e) {
+            return new Story[0];
+        } catch (JSONException ex) {
+            return new Story[0];
+        }
+    }
+
+     /**
      * Send a snap that has already been uploaded.
      *
      * @param mediaId the media_id of the uploaded snap.
@@ -337,12 +355,8 @@ public class Snapchat {
      * @param time the time (max 10) for which this snap should be visible.
      * @return true if successful, false otherwise.
      */
-    public boolean send(String mediaId, List<String> recipients, boolean story, int time) {
+    private boolean send(String mediaId, List<String> recipients, boolean story, int time) {
         try {
-            //Required variables
-            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
-            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
-
             // Prepare parameters
             Long timestamp = getTimestamp();
             String requestToken = TokenLib.requestToken(authToken, timestamp);
@@ -350,8 +364,12 @@ public class Snapchat {
 
             // Create comma-separated recipient string
             StringBuilder sb = new StringBuilder();
-            if (recipients.size() == 0) {
+            if (recipients.size() == 0 && !story) {
                 // Can't send to nobody
+                return false;
+            }else if(recipients.size() == 0 && story){
+                // Send to story only
+                //TODO : Send to story only
                 return false;
             }
             sb.append(recipients.get(0));
@@ -385,7 +403,7 @@ public class Snapchat {
                 params.put(TYPE_KEY, "0");
             }
 
-            // Execute request        
+            // Execute request
             HttpResponse<String> resp = requestString(path, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -394,15 +412,11 @@ public class Snapchat {
             }
         } catch (UnirestException e) {
             return false;
-        } catch (JSONException ex) {
-            return false;
         }
     }
-    
-    
-    
+
     /**
-     * Set a story from media already uploaded. Added by Liam Cottle.
+     * Set a story from media already uploaded.
      *
      * @param mediaId the media_id of the uploaded snap.
      * @param time the time (max 10) for which this story should be visible.
@@ -410,11 +424,8 @@ public class Snapchat {
      * @param caption the caption
      * @return true if successful, false otherwise.
      */
-    public boolean sendStory(String mediaId, int time, boolean video, String caption) {
+    private boolean sendStory(String mediaId, int time, boolean video, String caption) {
         try {
-            //Required variables
-            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
-            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
             // Prepare parameters
             Long timestamp = getTimestamp();
             String requestToken = TokenLib.requestToken(authToken, timestamp);
@@ -431,13 +442,13 @@ public class Snapchat {
             params.put(CAPTION_TEXT_DISPLAY_KEY, caption);
             params.put(ZIPPED_KEY, "0");
             if(video){
-              params.put(TYPE_KEY, "1");
+                params.put(TYPE_KEY, "1");
             }
             else{
-              params.put(TYPE_KEY, "0");
+                params.put(TYPE_KEY, "0");
             }
 
-            // Execute request        
+            // Execute request
             HttpResponse<String> resp = requestString(STORY_PATH, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -446,28 +457,20 @@ public class Snapchat {
             }
         } catch (UnirestException e) {
             return false;
-        } catch (JSONException ex) {
-            return false;
         }
     }
-    
-    
-    
-    
+
     /**
-     * Make a change to a snap/story, eg mark it as viewed or screenshot. Added by Liam Cottle
+     * Make a change to a snap/story, eg mark it as viewed or screenshot or seen.
      *
-     * @param snapId id of snap we are interacting with
+     * @param snap the snap object we are interacting with
      * @param seen boolean stating if we have seen this snap or not.
      * @param screenshot boolean stating if we have screenshot this snap or not.
      * @param replayed integer stating how many times we have replayed this snap.
      * @return true if successful, false otherwise.
      */
-    public boolean updateSnap(String snapId, boolean seen, boolean screenshot, boolean replayed) {
-        try {        
-            //Required variables
-            String username = this.loginObj.getString(Snapchat.USERNAME_KEY);
-            String authToken = this.loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
+    private boolean updateSnap(Snap snap, boolean seen, boolean screenshot, boolean replayed) {
+        try {
             // Prepare parameters
             Long timestamp = getTimestamp();
             String requestToken = TokenLib.requestToken(authToken, timestamp);
@@ -476,24 +479,17 @@ public class Snapchat {
             int replayedInt = 0;
 
             if(seen){
-              statusInt = 0;
+                statusInt = 0;
             }
             else if(screenshot){
-              statusInt = 1;
+                statusInt = 1;
             }
 
             if(replayed){
-              replayedInt = 1;
+                replayedInt = 1;
             }
 
-            String friendsTimestamp = "0";
-            try {
-                friendsTimestamp = this.loginObj.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
-            } catch(Exception ee) {
-                friendsTimestamp = timestamp.toString();
-            }
-
-            String jsonString = "{\"" + snapId + "\":{\"c\":" + statusInt + ",\"t\":" + timestamp + ",\"replayed\":" + replayedInt + "}}";
+            String jsonString = "{\"" + snap.getId() + "\":{\"c\":" + statusInt + ",\"t\":" + timestamp + ",\"replayed\":" + replayedInt + "}}";
 
             String eventsString = "[]";
 
@@ -510,7 +506,7 @@ public class Snapchat {
             // Sending path
             String path = UPDATE_SNAPS_PATH;
 
-            // Execute request        
+            // Execute request
             HttpResponse<String> resp = requestString(path, params, null);
             if (resp.getCode() == 200 || resp.getCode() == 202) {
                 return true;
@@ -519,22 +515,101 @@ public class Snapchat {
             }
         } catch (UnirestException e) {
             return false;
-        } catch (JSONException ex) {
-            return false;
         }
     }
-    
-    
-    
-    
+
     /**
-     * Get a new timestamp to use in a request.
+     * Upload a file and return the media_id for sending.
      *
-     * @return a timestamp.
+     * @param image the image file to upload.
+     * @param video is a video
+     * @return the new upload's media_id.  Returns null if there is an error.
      */
-    public static Long getTimestamp() {
-        Long timestamp = (new Date()).getTime() / 1000L;
-        return timestamp;
+    private String upload(File image, boolean video) {
+        try {
+            // Open file and ecnrypt it
+            byte[] fileBytes = IOUtils.toByteArray(new FileInputStream(image));
+            byte[] encryptedBytes = Encryption.encrypt(fileBytes);
+
+            // Write to a temporary file
+            File encryptedFile = File.createTempFile("encr", "snap");
+
+            FileOutputStream fos = new FileOutputStream(encryptedFile);
+            fos.write(encryptedBytes);
+            fos.close();
+
+            // Create other params
+            Long timestamp = getTimestamp();
+            String requestToken = TokenLib.requestToken(authToken, timestamp);
+            String mediaId = Snapchat.getNewMediaId(username);
+
+            // Make parameter map
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put(USERNAME_KEY, username);
+            params.put(TIMESTAMP_KEY, timestamp);
+            params.put(REQ_TOKEN_KEY, requestToken);
+            params.put(MEDIA_ID_KEY, mediaId);
+            if(video){
+                params.put(TYPE_KEY, 1);
+            }
+            else{
+                params.put(TYPE_KEY, 0);
+            }
+
+            // Perform request and check for 200
+            HttpResponse<String> resp = requestString(UPLOAD_PATH, params, encryptedFile);
+            if (resp.getCode() == 200) {
+                return mediaId;
+            } else {
+                System.out.println("Upload failed, Response Code: " + resp.getCode());
+                return null;
+            }
+        } catch (IOException e) {
+            System.out.println(e);
+            return null;
+        } catch (Encryption.EncryptionException e) {
+            System.out.println(e);
+            return null;
+        } catch (UnirestException e) {
+            System.out.println(e);
+            return null;
+        } catch (Exception e) {
+            System.out.println(e);
+            return null;
+        } catch(OutOfMemoryError e){
+            System.out.println(e);
+            return null;
+        }
+    }
+
+    /**
+     * ====================================================  PRIVATE STATIC METHODS REGION ====================================================
+     */
+
+    /**
+     * Parse a JSONArray into a list of type
+     *
+     * @param arr the JSON array
+     * @param clazz the class of type
+     * @return a list of type
+     */
+    private static <T> List<T> bindArray(JSONArray arr, Class<? extends JSONBinder<T>> clazz) {
+        try {
+            int length = arr.length();
+            List<T> result = new ArrayList<T>();
+            for (int i = 0; i < length; i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                T bound = clazz.newInstance().bind(obj);
+                result.add(bound);
+            }
+            return result;
+        } catch (JSONException e) {
+            return new ArrayList<T>();
+        } catch (InstantiationException e) {
+            return new ArrayList<T>();
+        } catch (IllegalAccessException e) {
+            return new ArrayList<T>();
+        }
     }
 
     /**
@@ -543,67 +618,19 @@ public class Snapchat {
      * @param username your Snapchat username.
      * @return a media_id as a String.
      */
-    public static String getNewMediaId(String username) {
+    private static String getNewMediaId(String username) {
         String uuid = UUID.randomUUID().toString();
         return username.toUpperCase() + "~" + uuid;
     }
-
-    public static HttpResponse<JsonNode> requestJson(String path, Map<String, Object> params, File file) throws UnirestException {
-        MultipartBody req = prepareRequest(path, params, file);
-
-        // Execute and return response as JSON
-        HttpResponse<JsonNode> resp = req.asJson();
-
-        // Record
-        lastRequestPath = path;
-        lastResponse = resp;
-        lastResponseBodyClass = JsonNode.class;
-
-        return resp;
-    }
-
-    public static HttpResponse<String> requestString(String path, Map<String, Object> params, File file) throws UnirestException {
-        MultipartBody req = prepareRequest(path, params, file);
-
-        // Execute and return response as String
-        HttpResponse<String> resp = req.asString();
-
-        // Record
-        lastRequestPath = path;
-        lastResponse = resp;
-        lastResponseBodyClass = String.class;
-
-        return resp;
-    }
-
-    public static HttpResponse<InputStream> requestBinary(String path, Map<String, Object> params, File file) throws UnirestException {
-        MultipartBody req = prepareRequest(path, params, file);
-
-        // Execute and return as bytes
-        HttpResponse<InputStream> resp = req.asBinary();
-
-        // Record
-        lastRequestPath = path;
-        lastResponse = resp;
-        lastResponseBodyClass = InputStream.class;
-
-        return resp;
-    }
-
-    public static HttpResponse<InputStream> requestStoryBinary(String path) throws UnirestException {
-        HttpRequest req = Unirest.get(BASE_URL + path)
-                .header(JSON_TYPE_KEY, JSON_TYPE)
-                .header(USER_AGENT_KEY, USER_AGENT);
-
-        // Execute and return as bytes
-        HttpResponse<InputStream> resp = req.asBinary();
-
-        // Record
-        lastRequestPath = path;
-        lastResponse = resp;
-        lastResponseBodyClass = InputStream.class;
-
-        return resp;
+    
+    /**
+     * Get a new timestamp to use in a request.
+     *
+     * @return a timestamp.
+     */
+    private static Long getTimestamp() {
+        Long timestamp = (new Date()).getTime() / 1000L;
+        return timestamp;
     }
 
     private static MultipartBody prepareRequest(String path, Map<String, Object> params, File file) {
@@ -619,6 +646,64 @@ public class Snapchat {
         }
 
         return req;
+    }
+
+    private static HttpResponse<InputStream> requestBinary(String path, Map<String, Object> params, File file) throws UnirestException {
+        MultipartBody req = prepareRequest(path, params, file);
+
+        // Execute and return as bytes
+        HttpResponse<InputStream> resp = req.asBinary();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = InputStream.class;
+
+        return resp;
+    }
+
+    private static HttpResponse<JsonNode> requestJson(String path, Map<String, Object> params, File file) throws UnirestException {
+        MultipartBody req = prepareRequest(path, params, file);
+
+        // Execute and return response as JSON
+        HttpResponse<JsonNode> resp = req.asJson();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = JsonNode.class;
+
+        return resp;
+    }
+
+    private static HttpResponse<InputStream> requestStoryBinary(String path) throws UnirestException {
+        HttpRequest req = Unirest.get(BASE_URL + path)
+                .header(JSON_TYPE_KEY, JSON_TYPE)
+                .header(USER_AGENT_KEY, USER_AGENT);
+
+        // Execute and return as bytes
+        HttpResponse<InputStream> resp = req.asBinary();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = InputStream.class;
+
+        return resp;
+    }
+
+    private static HttpResponse<String> requestString(String path, Map<String, Object> params, File file) throws UnirestException {
+        MultipartBody req = prepareRequest(path, params, file);
+
+        // Execute and return response as String
+        HttpResponse<String> resp = req.asString();
+
+        // Record
+        lastRequestPath = path;
+        lastResponse = resp;
+        lastResponseBodyClass = String.class;
+
+        return resp;
     }
 
 }
