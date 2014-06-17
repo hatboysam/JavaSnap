@@ -14,7 +14,7 @@ public class Snap implements JSONBinder<Snap> {
     private static final int TYPE_FRIEND_REQUEST = 3;
     private static final int TYPE_FRIEND_REQUEST_IMAGE = 4;
     private static final int TYPE_FRIEND_REQUEST_VIDEO = 5;
-    private static final int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 5;
+    private static final int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 6;
 
     private static final int NONE = -1;
     private static final int SENT = 0;
@@ -44,6 +44,7 @@ public class Snap implements JSONBinder<Snap> {
     public Snap() { }
 
     public Snap bind(JSONObject obj) {
+        System.out.println(obj.toString());
         // Check for fields that always exist
         try {
             this.id = obj.getString(ID_KEY);
@@ -119,7 +120,7 @@ public class Snap implements JSONBinder<Snap> {
      * @return true if it has been viewed, false otherwise.
      */
     public boolean isViewed() {
-        return (state == VIEWED);
+        return (state == VIEWED || state == SCREENSHOT);
     }
 
     /**
@@ -146,7 +147,16 @@ public class Snap implements JSONBinder<Snap> {
      * @return true if it is a video or an image, false if other.
      */
     public boolean isMedia() {
-        return (type <= TYPE_VIDEO);
+        return (isImage() || isVideo());
+    }
+
+    /**
+     * Determine if a snap has been screenshoted.
+     *
+     * @return true if it is screenshoted.
+     */
+    public boolean isScreenshoted(){
+        return state == SCREENSHOT;
     }
 
     /**
