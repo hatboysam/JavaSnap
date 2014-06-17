@@ -95,7 +95,7 @@ A separate API call will be needed to download each `Story`, you will need to pa
 
 #### Update Snap information
 This method allows you to change the status of a specific snap/story. For example, marking the snap as viewed/screenshot/replayed.
-You need to pass in the snapId for the snap you want to update, a boolean for seen/screenshot/replayed.
+You need to pass in the snap object for the snap you want to update, a boolean for seen/screenshot/replayed.
 
     snapchat.setSnapFlags(snap, seen, screenshot, replayed)
 
