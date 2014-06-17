@@ -93,12 +93,24 @@ public class Snap implements JSONBinder<Snap> {
     public static Snap[] filterDownloadable(Snap[] input) {
         ArrayList<Snap> result = new ArrayList<Snap>();
         for (Snap s : input) {
-            if (s.isMedia() && s.isIncoming() && !s.isViewed()) {
+            if(s.isDownloadable()){
                 result.add(s);
             }
         }
 
         return result.toArray(new Snap[result.size()]);
+    }
+
+    /**
+     * Check if this snap can be downloaded
+     *
+     * @return is downloadable
+     */
+    public boolean isDownloadable(){
+        if (this.isMedia() && this.isIncoming() && !this.isViewed()) {
+            return true;
+        }
+        return false;
     }
 
     /**

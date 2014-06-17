@@ -5,6 +5,7 @@ JavaSnap provides a simple Java interface to the Snapchat API, which has been un
 
 * Download Snaps to your computer or Android device.
 * Send a local File as a Snap to your friends.
+* Most features from the original Snapchat app.
 
 ## Usage
 ### Build
@@ -33,87 +34,70 @@ Running the java library via the command line will allow you to send a local 'jp
 ### Using Library Functions
 #### Logging In
 
-    JSONObject loginObj = Snapchat.login(username, password);
-    String authToken = loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
-	
-**Note:** Keep track of the `loginObj` and `authToken`, you will need them as arguments for other methods.
+    Snapchat snapchat = Snapchat.login(username, password);
 
 #### Get Friends
-A list of your Snapchat friends is returned in the `loginObj` from the `login()` method.  You can use the following code to extract them as Java objects containing the friends' Snapchat usernames and real names (as you have assigned them):
+You can use the following code to get all your friends. Snapchat usernames and real names (as you have assigned them):
 
-    Friend[] friends = Snapchat.getFriends(loginObj);
+    Friend[] friends = snapchat.getFriends();
 
 #### Get Snaps
-The `JSONObject` returned after login contains all of the metadata for your Snaps.  The following code will extract it into `Snap` objects.
+You can use the following code to get all your snaps :
 
-    Snap[] snaps = Snapchat.getSnaps(loginObj);
+    Snap[] snaps = snapchat.getSnaps();
 	
 A separate API call will be needed to download each `Snap`.  The `getSnaps()` method will return some Snaps that are not available to download, such as already-viewed Snaps or snaps that don't contain media (such as friend requests).  A `Snap` can be downloaded if `snap.isIncoming() == true`, `snap.isMedia() == true`, and `snap.isViewed() == false`.
-To get a list of only such snaps, you can pass the `Snap[]` to method `Snapchat.filterDownloadable(Snap[] snaps)`.
+To get a list of only such snaps, you can pass the `Snap[]` to method `Snapchat.filterDownloadable(Snap[] snaps)`. You can also use `snaps[#].isDownloadable()`.
 
 #### Download a Snap
 Once you have determined a Snap candidate for downloading using the methods above, the following code will fetch the actual media and save it to a file:
 
-    byte[] snapBytes = Snapchat.getSnap(snap, username, authToken);
+    byte[] snapBytes = snapchat.getSnap(snap);
     File snapFile = new File(...);
-    FileOutputStream fos = new FileOutputStream(snapFile);
+    FileOutputStream snapOs = new FileOutputStream(snapFile);
     snapOs.write(snapBytes);
     snapOs.close();
 
 #### Sending a Snap	
-Sending a Snap consists of two steps: uploading and sending.  When you upload a Snap, you provide a unique identifier called `media_id` which you will use when sending the snap to its eventual recipients.  
+Sending a Snap consists of two steps: uploading and sending.  When you upload a Snap, you provide a unique identifier called `media_id` which you will use when sending the snap to its eventual recipients.
+Lucky you, the API will do everything for you in the background.
 
 The following code demonstrates uploading a `File` as a Snap:
 
     File file = new File(...);
     boolean video = false; //whether or not 'file' is a video or not.
-    String mediaId = Snapchat.upload(file, username, authToken, video);
-	
-If that succeeds, use the following code to send it:
-
-    List<String> recipiends = new ArrayList<String>();
-    recipients.add("somebody");
-    recipients.add("somebodyElse123");
-    
-    int viewTime = 10; //seconds
-    boolean myStory = false; // add to story, or not
-    boolean result = Snapchat.send(mediaId, recipients, myStory, viewTime, username, authToken);
+    boolean story = false; //whether or not add this to your story.
+    int time = 10; //How long will the snap last. Max = 10.
+    List<String> recipients = (...);
+    String mediaId = Snapchat.upload(file, recipients, video, story, time);
 	
 #### Setting a Story	
 Setting a Story consists of two steps: uploading and setting.  When you upload a Story, you provide a unique identifier called `media_id` which you will use when sentting the story.
+Lucky you, the API will do everything for you in the background.
 
 The following code demonstrates uploading a `File` as a Story:
 
     File file = new File(...);
     boolean video = false; //whether or not 'file' is a video or not.
-    String mediaId = Snapchat.upload(file, username, authToken, video);
-	
-If that succeeds, use the following code to set it:
-
-    List<String> recipiends = new ArrayList<String>();
-    recipients.add("somebody");
-    recipients.add("somebodyElse123");
-    
-    int viewTime = 10; //seconds
-    boolean video = false; // whether or not this is video data.
-    String caption = "My Story"; //This is only shown in the story list, not on the actual story photo/video.
-    boolean result = Snapchat.sendStory(mediaId, viewTime, video, caption, username, authToken);
+    int time = 10; //How long will the snap last. Max = 10.
+    String caption = "My Story"; //Can be anything. We couldn't find any effect.
+    boolean result = snapchat.sendStory(file, video, time, caption);
 	
 #### Get Stories
-This method will make an API call to snapchat with your username and the token you received from logging in. It will then return your friends stories in the same way as fetching snaps does.
+You can use the following code to get all your stories :
 
-    Story[] storyObjs = Snapchat.getStories(username, token);
+    Story[] storyObjs = snapchat.getStories();
     Story[] downloadable = Story.filterDownloadable(storyObjs); //All stories are downloadable but this makes the Story object in the same format as the Snap one.
 	
-A separate API call will be needed to download each `Story`, you will need to pass the Story[] you want to download as the first argument along with your username and token from logging in as the second and third arguments respectively.
+A separate API call will be needed to download each `Story`, you will need to pass the Story[] you want to download as argument.
 
-    byte[] storyBytes = Snapchat.getStory(s, username, token);
+    byte[] storyBytes = Snapchat.getStory(story);
 
 #### Update Snap information
 This method allows you to change the status of a specific snap/story. For example, marking the snap as viewed/screenshot/replayed.
-You need to pass in the snapId for the snap you want to update, a boolean for seen/screenshot/replayed, along with your username, authtoken from logging in and your login object.
+You need to pass in the snap object for the snap you want to update, a boolean for seen/screenshot/replayed.
 
-    updateSnap(snapId, seen, screenshot, replayed, username, authToken, loginObject)
+    snapchat.setSnapFlags(snap, seen, screenshot, replayed)
 
 
 

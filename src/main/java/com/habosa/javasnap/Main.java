@@ -1,7 +1,5 @@
 package com.habosa.javasnap;
 
-import org.json.JSONObject;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -9,7 +7,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class Main {
-
+    private static Snapchat snapchat;
+    
     public static void main(String[] args) throws Exception {
         // Get username and password
         Scanner scanner = new Scanner(System.in);
@@ -20,16 +19,13 @@ public class Main {
 
         // Test logging in
         System.out.println("Logging in...");
-        JSONObject loginObj = Snapchat.login(username, password);
-        if (loginObj != null) {
+        snapchat = Snapchat.login(username, password);
+        if (snapchat != null) {
             System.out.println("Logged in.");
         } else {
             System.out.println("Failed to log in.");
             return;
         }
-
-        // Get the auth_token
-        String token = loginObj.getString(Snapchat.AUTH_TOKEN_KEY);
 
         // Ask the user what they want to do
         System.out.println();
@@ -44,22 +40,22 @@ public class Main {
         scanner.nextLine();
         switch (option) {
             case 1:
-                fetchSnaps(loginObj, username, token);
+                fetchSnaps();
             break;
             case 2:
                 System.out.println("Enter path to image file:");
                 String snapFileName = scanner.nextLine();
                 System.out.println("Enter recipient Snapchat username:");
                 String recipient = scanner.nextLine();
-                sendSnap(username, recipient, snapFileName, token);
+                sendSnap(username, recipient, snapFileName);
             break;
             case 3:
                 System.out.println("Enter path to image file:");
                 String storyFileName = scanner.nextLine();
-                setStory(username, storyFileName, token);
+                setStory(username, storyFileName);
             break;
             case 4:
-                Story[] storyObjs = Snapchat.getStories(username, token);
+                Story[] storyObjs = snapchat.getStories();
                 Story[] downloadable = Story.filterDownloadable(storyObjs);
                 for (Story s : downloadable) {
                   String extension = ".jpg";
@@ -67,7 +63,7 @@ public class Main {
                     extension = ".mp4";
                   }
                   System.out.println("Downloading story from " + s.getSender());
-                  byte[] storyBytes = Snapchat.getStory(s, username, token);
+                  byte[] storyBytes = Snapchat.getStory(s);
                   File storyFile = new File(s.getSender() + "-" + s.getId() + extension);
                   FileOutputStream storyOs = new FileOutputStream(storyFile);
                   storyOs.write(storyBytes);
@@ -82,16 +78,16 @@ public class Main {
 
     }
 
-    public static void fetchSnaps(JSONObject loginObj, String username, String token) throws IOException {
+    public static void fetchSnaps() throws IOException {
         // Try fetching all snaps
         System.out.println("Fetching snaps...");
-        Snap[] snapObjs = Snapchat.getSnaps(loginObj);
+        Snap[] snapObjs = snapchat.getSnaps();
         Snap[] downloadable = Snap.filterDownloadable(snapObjs);
         for (Snap s : downloadable) {
             // TODO(samstern): Support video
             if (s.isImage()) {
                 System.out.println("Downloading snap from " + s.getSender());
-                byte[] snapBytes = Snapchat.getSnap(s, username, token);
+                byte[] snapBytes = snapchat.getSnap(s);
                 File snapFile = new File(s.getSender() + "-" + s.getId() + ".jpg");
                 FileOutputStream snapOs = new FileOutputStream(snapFile);
                 snapOs.write(snapBytes);
@@ -101,12 +97,11 @@ public class Main {
         System.out.println("Done.");
     }
 
-    public static void sendSnap(String username, String recipient, String filename, String token)
+    public static void sendSnap(String username, String recipient, String filename)
             throws FileNotFoundException {
 
-        // Try uploading a file
+        // Get file
         File file = new File(filename);
-        String medId = Snapchat.upload(file, username, token, false);
 
         // Try sending it
         List<String> recipients = new ArrayList<String>();
@@ -117,7 +112,7 @@ public class Main {
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = Snapchat.send(medId, recipients, postStory, 10, username, token);
+        boolean result = snapchat.sendSnap(file, recipients, false, postStory, 10);
         if (result) {
             System.out.println("Sent.");
         } else {
@@ -125,20 +120,19 @@ public class Main {
         }
     }
     
-    public static void setStory(String username, String filename, String token)
+    public static void setStory(String username, String filename)
             throws FileNotFoundException {
 
         boolean video = false; //TODO(liamcottle) upload video snaps from command line.
-        // Try uploading a file
+        // Get file
         File file = new File(filename);
-        String medId = Snapchat.upload(file, username, token, video);
 
         // Send and print
         System.out.println("Setting...");
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = Snapchat.sendStory(medId, 10, video, "My Story", username, token);
+        boolean result = snapchat.sendStory(file, video, 10, "My Story");
         if (result) {
             System.out.println("Set.");
         } else {
