@@ -1,13 +1,9 @@
 package com.habosa.javasnap;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.StringUtils;
-
-import java.security.NoSuchAlgorithmException;
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * Modified version of Snap Encryption for Stories by Liam Cottle
@@ -26,36 +22,14 @@ public class StoryEncryption {
         SecretKeySpec keyspec = new SecretKeySpec(key, "AES");
         
         Cipher cipher = null;
-        try {
-          cipher = Cipher.getInstance("AES/CBC/NoPadding");
-        } catch (NoSuchAlgorithmException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-        
         byte[] decrypted = null;
         try {
+          cipher = Cipher.getInstance("AES/CBC/PKCS5Padding"); //Uses PKCS7Padding which is same as PKCS5Padding
           cipher.init(Cipher.DECRYPT_MODE, keyspec, ivspec);
           decrypted = cipher.doFinal(storyData);
-          //Remove trailing zeroes, don't need this?
-          /*
-          if( decrypted.length > 0){
-            int trim = 0;
-            for( int i = decrypted.length - 1; i >= 0; i-- ) if( decrypted[i] == 0 ) trim++;
-              if( trim > 0 ){
-                byte[] newArray = new byte[decrypted.length - trim];
-                System.arraycopy(decrypted, 0, newArray, 0, decrypted.length - trim);
-                decrypted = newArray;
-               }
-           }
-           */
-       } catch (Exception e){
+        } catch (Exception e) {
           e.printStackTrace();
-          //return new byte[0];
-       }
+        }
        return decrypted;
     }
 }
