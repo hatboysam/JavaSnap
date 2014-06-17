@@ -11,7 +11,7 @@ import org.apache.commons.codec.binary.Base64;
  */
 public class StoryEncryption {
 
-    static char[] HEX_CHARS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+    private static char[] HEX_CHARS = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
     public static byte[] decrypt(byte[] storyData, String MediaKey, String MediaIV) {
     

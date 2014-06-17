@@ -8,9 +8,9 @@ import java.util.Arrays;
 
 public class Story implements JSONBinder<Story> {
 
-    public static int TYPE_IMAGE = 0;
-    public static int TYPE_VIDEO = 1;
-    public static int TYPE_VIDEO_NOAUDIO = 2;
+    private static int TYPE_IMAGE = 0;
+    private static int TYPE_VIDEO = 1;
+    private static int TYPE_VIDEO_NOAUDIO = 2;
 
     private static final String STORY_KEY = "story";
     
