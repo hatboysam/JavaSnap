@@ -268,7 +268,7 @@ public class Snapchat {
      * @param story the Story to download.
      * @return a byte[] containing decrypted image or video data.
      */
-    public static byte[] getDecryptedStory(Story story) {
+    public static byte[] getStory(Story story) {
         try {
             HttpResponse<InputStream> resp = requestStoryBinary(STORY_BLOB_PATH + "?story_id=" + story.getId());
             InputStream is = resp.getBody();

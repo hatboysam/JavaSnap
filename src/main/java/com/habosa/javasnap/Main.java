@@ -63,7 +63,7 @@ public class Main {
                     extension = ".mp4";
                   }
                   System.out.println("Downloading story from " + s.getSender());
-                  byte[] storyBytes = Snapchat.getDecryptedStory(s);
+                  byte[] storyBytes = Snapchat.getStory(s);
                   File storyFile = new File(s.getSender() + "-" + s.getId() + extension);
                   FileOutputStream storyOs = new FileOutputStream(storyFile);
                   storyOs.write(storyBytes);
