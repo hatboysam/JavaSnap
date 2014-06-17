@@ -8,19 +8,19 @@ import java.util.Arrays;
 
 public class Snap implements JSONBinder<Snap> {
 
-    private static int TYPE_IMAGE = 0;
-    private static int TYPE_VIDEO = 1;
-    private static int TYPE_VIDEO_NOAUDIO = 2;
-    private static int TYPE_FRIEND_REQUEST = 3;
-    private static int TYPE_FRIEND_REQUEST_IMAGE = 4;
-    private static int TYPE_FRIEND_REQUEST_VIDEO = 5;
-    private static int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 5;
+    private static final int TYPE_IMAGE = 0;
+    private static final int TYPE_VIDEO = 1;
+    private static final int TYPE_VIDEO_NOAUDIO = 2;
+    private static final int TYPE_FRIEND_REQUEST = 3;
+    private static final int TYPE_FRIEND_REQUEST_IMAGE = 4;
+    private static final int TYPE_FRIEND_REQUEST_VIDEO = 5;
+    private static final int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 5;
 
-    private static int NONE = -1;
-    private static int SENT = 0;
-    private static int DELIVERED = 1;
-    private static int VIEWED = 2;
-    private static int SCREENSHOT = 3;
+    private static final int NONE = -1;
+    private static final int SENT = 0;
+    private static final int DELIVERED = 1;
+    private static final int VIEWED = 2;
+    private static final int SCREENSHOT = 3;
 
     private static final String ID_KEY = "id";
     private static final String SENDER_KEY = "sn";

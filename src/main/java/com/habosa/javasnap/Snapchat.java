@@ -62,7 +62,7 @@ public class Snapchat {
     private static final String STORY_PATH = "bq/post_story";
     private static final String DOUBLE_PATH = "bq/double_post";
     private static final String BLOB_PATH = "ph/blob";
-    
+
     private static final String FRIEND_STORIES_PATH = "bq/stories";
     private static final String STORY_BLOB_PATH = "bq/story_blob";
     private static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
