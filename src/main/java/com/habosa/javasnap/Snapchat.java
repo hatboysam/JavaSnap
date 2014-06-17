@@ -175,7 +175,7 @@ public class Snapchat {
     }
 
     /**
-     * Get an array of Snap objects.
+     * Get received and sent snaps.
      * @return a Snap[]
      */
     public Snap[] getSnaps() {
