@@ -19,7 +19,7 @@ public class Main {
 
         // Test logging in
         System.out.println("Logging in...");
-        snapchat = Snapchat.Login(username, password);
+        snapchat = Snapchat.login(username, password);
         if (snapchat != null) {
             System.out.println("Logged in.");
         } else {
@@ -55,7 +55,7 @@ public class Main {
                 setStory(username, storyFileName);
             break;
             case 4:
-                Story[] storyObjs = snapchat.GetStories();
+                Story[] storyObjs = snapchat.getStories();
                 Story[] downloadable = Story.filterDownloadable(storyObjs);
                 for (Story s : downloadable) {
                   String extension = ".jpg";
@@ -63,7 +63,7 @@ public class Main {
                     extension = ".mp4";
                   }
                   System.out.println("Downloading story from " + s.getSender());
-                  byte[] storyBytes = Snapchat.GetDecryptedStory(s);
+                  byte[] storyBytes = Snapchat.getDecryptedStory(s);
                   File storyFile = new File(s.getSender() + "-" + s.getId() + extension);
                   FileOutputStream storyOs = new FileOutputStream(storyFile);
                   storyOs.write(storyBytes);
@@ -81,13 +81,13 @@ public class Main {
     public static void fetchSnaps() throws IOException {
         // Try fetching all snaps
         System.out.println("Fetching snaps...");
-        Snap[] snapObjs = snapchat.GetSnaps();
+        Snap[] snapObjs = snapchat.getSnaps();
         Snap[] downloadable = Snap.filterDownloadable(snapObjs);
         for (Snap s : downloadable) {
             // TODO(samstern): Support video
             if (s.isImage()) {
                 System.out.println("Downloading snap from " + s.getSender());
-                byte[] snapBytes = snapchat.GetSnap(s);
+                byte[] snapBytes = snapchat.getSnap(s);
                 File snapFile = new File(s.getSender() + "-" + s.getId() + ".jpg");
                 FileOutputStream snapOs = new FileOutputStream(snapFile);
                 snapOs.write(snapBytes);
@@ -112,7 +112,7 @@ public class Main {
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = snapchat.SendSnap(file, recipients, false, postStory, 10);
+        boolean result = snapchat.sendSnap(file, recipients, false, postStory, 10);
         if (result) {
             System.out.println("Sent.");
         } else {
@@ -132,7 +132,7 @@ public class Main {
         boolean postStory = false; //set as true to make this your story as well...
 
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = snapchat.SendStory(file, video, 10, "My Story");
+        boolean result = snapchat.sendStory(file, video, 10, "My Story");
         if (result) {
             System.out.println("Set.");
         } else {

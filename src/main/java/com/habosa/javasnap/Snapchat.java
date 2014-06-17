@@ -90,7 +90,7 @@ public class Snapchat {
     
     /**
      * Build the Snapchat object
-     * @see Snapchat#Login(String, String)
+     * @see Snapchat#login(String, String)
      */
     private Snapchat(JSONObject loginObj){
         this.loginObj = loginObj;
@@ -112,7 +112,7 @@ public class Snapchat {
      * @param password the Snapchat password.
      * @return the entire JSON login response.
      */
-    public static Snapchat Login(String username, String password) {
+    public static Snapchat login(String username, String password) {
         Map<String, Object> params = new HashMap<String, Object>();
 
         // Add username and password
@@ -149,37 +149,88 @@ public class Snapchat {
     public void refresh() {
         //TODO Get update. There is a better way than refreshing loginObj by relogging in.
         //TODO : Nothing is refreshed here except stories.
+        getStories();
+        getSnaps();
+        getFriends();
         lastRefreshed = new Date().getTime();
-        this.stories = getStories();
-        this.snaps = getSnaps();
-        this.friends = parseFriends();
+    }
+
+    /**
+     * Get your friends
+     * @return a Friend[]
+     */
+    public Friend[] getFriends() {
+        if(this.friends != null){
+            return this.friends;
+        }else{
+            try {
+                JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
+                List<Friend> resultList = bindArray(friendsArr, Friend.class);
+                this.friends = resultList.toArray(new Friend[resultList.size()]);
+                return this.friends;
+            } catch (JSONException e) {
+                return new Friend[0];
+            }
+        }
+    }
+
+    /**
+     * Get an array of Snap objects.
+     * @return a Snap[]
+     */
+    public Snap[] getSnaps() {
+        if(this.snaps != null){
+            return this.snaps;
+        }else{
+            try {
+                JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
+                List<Snap> resultList = bindArray(snapArr, Snap.class);
+                this.snaps = resultList.toArray(new Snap[resultList.size()]);
+                return this.snaps;
+            } catch (JSONException e) {
+                return new Snap[0];
+            }
+        }
     }
 
     /**
      * Get Friends Stories from Snapchat.
-     *
-     * @return an array of Stories.
+     * @return a Story[]
      */
-    public Story[] GetStories(){
-        return this.stories;
-    }
+    public Story[] getStories() {
+        if(this.stories != null){
+            return this.stories;
+        }else{
+            try {
+                Map<String, Object> params = new HashMap<String, Object>();
+                params.put(USERNAME_KEY, username);
+                Long timestamp = getTimestamp();
+                params.put(TIMESTAMP_KEY, timestamp);
+                params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
 
-    /**
-     * Get your Snaps
-     *
-     * @return a Snap[].
-     */
-    public Snap[] GetSnaps(){
-        return this.snaps;
-    }
+                HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
+                JSONObject obj = resp.getBody().getObject();
+                JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
 
-    /**
-     * Get an array of your Friend objects.
-     *
-     * @return a Friend[].
-     */
-    public Friend[] GetFriends(){
-        return this.friends;
+                JSONArray storiesArray = new JSONArray();
+
+                for (int i=0; i<storyArr.length(); i++) {
+                    JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
+                    for (int j=0; j<items.length(); j++) {
+                        JSONObject _story = items.getJSONObject(j).getJSONObject("story");
+                        storiesArray.put(_story);
+                    }
+                }
+
+                List<Story> resultList = bindArray(storiesArray, Story.class);
+                this.stories = resultList.toArray(new Story[resultList.size()]);
+                return this.stories;
+            } catch (UnirestException e) {
+                return new Story[0];
+            } catch (JSONException ex) {
+                return new Story[0];
+            }
+        }
     }
 
     /**
@@ -188,7 +239,7 @@ public class Snapchat {
      * @param snap the Snap to download.
      * @return a byte[] containing decrypted image or video data.
      */
-    public byte[] GetSnap(Snap snap) {
+    public byte[] getSnap(Snap snap) {
         try {
             Map<String, Object> params = new HashMap<String, Object>();
             params.put(USERNAME_KEY, username);
@@ -217,7 +268,7 @@ public class Snapchat {
      * @param story the Story to download.
      * @return a byte[] containing decrypted image or video data.
      */
-    public static byte[] GetDecryptedStory(Story story) {
+    public static byte[] getDecryptedStory(Story story) {
         try {
             HttpResponse<InputStream> resp = requestStoryBinary(STORY_BLOB_PATH + "?story_id=" + story.getId());
             InputStream is = resp.getBody();
@@ -241,7 +292,7 @@ public class Snapchat {
      * @param time the time (max 10) for which this snap should be visible.
      * @return true if success, otherwise false.
      */
-    public boolean SendSnap(File image, List<String> recipients, boolean video, boolean story, int time){
+    public boolean sendSnap(File image, List<String> recipients, boolean video, boolean story, int time){
         String upload_media_id = upload(image, video);
         if(upload_media_id != null){
             return send(upload_media_id, recipients, story, time);
@@ -258,7 +309,7 @@ public class Snapchat {
      * @param caption a caption. Nobody knows what it is used for. eg. "My Story"
      * @return true if success, otherwise false.
      */
-    public boolean SendStory(File image, boolean video, int time, String caption){
+    public boolean sendStory(File image, boolean video, int time, String caption){
         String upload_media_id = upload(image, video);
         if(upload_media_id != null){
             return sendStory(upload_media_id, time, video, caption);
@@ -275,76 +326,13 @@ public class Snapchat {
      * @param replayed integer stating how many times we have replayed this snap.
      * @return true if successful, false otherwise.
      */
-    public boolean UpdateSnap(Snap snap, boolean seen, boolean screenshot, boolean replayed){
+    public boolean setSnapFlags(Snap snap, boolean seen, boolean screenshot, boolean replayed){
         return updateSnap(snap, seen, screenshot, replayed);
     }
 
     /**
      * ==================================================  PRIVATE NON-STATIC METHODS REGION ==================================================
      */
-
-    /**
-     * Parses Friends from loginObj
-     * @return a Friend[]
-     */
-    private Friend[] parseFriends() {
-        try {
-            JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
-            List<Friend> resultList = bindArray(friendsArr, Friend.class);
-            return resultList.toArray(new Friend[resultList.size()]);
-        } catch (JSONException e) {
-            return new Friend[0];
-        }
-    }
-
-    /**
-     * Parses Snaps from loginObj
-     * @return a Snap[]
-     */
-    private Snap[] getSnaps() {
-        try {
-            JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
-            List<Snap> resultList = bindArray(snapArr, Snap.class);
-            return resultList.toArray(new Snap[resultList.size()]);
-        } catch (JSONException e) {
-            return new Snap[0];
-        }
-    }
-
-    /**
-     * Get Friends Stories from Snapchat.
-     * @return a Story[]
-     */
-    private Story[] getStories() {
-        try {
-            Map<String, Object> params = new HashMap<String, Object>();
-            params.put(USERNAME_KEY, username);
-            Long timestamp = getTimestamp();
-            params.put(TIMESTAMP_KEY, timestamp);
-            params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
-
-            HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
-            JSONObject obj = resp.getBody().getObject();
-            JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
-
-            JSONArray storiesArray = new JSONArray();
-
-            for (int i=0; i<storyArr.length(); i++) {
-                JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
-                for (int j=0; j<items.length(); j++) {
-                    JSONObject _story = items.getJSONObject(j).getJSONObject("story");
-                    storiesArray.put(_story);
-                }
-            }
-
-            List<Story> resultList = bindArray(storiesArray, Story.class);
-            return resultList.toArray(new Story[resultList.size()]);
-        } catch (UnirestException e) {
-            return new Story[0];
-        } catch (JSONException ex) {
-            return new Story[0];
-        }
-    }
 
      /**
      * Send a snap that has already been uploaded.
