@@ -5,12 +5,13 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Story implements JSONBinder<Story> {
 
-    public static int TYPE_IMAGE = 0;
-    public static int TYPE_VIDEO = 1;
-    public static int TYPE_VIDEO_NOAUDIO = 2;
+    private static final int TYPE_IMAGE = 0;
+    private static final int TYPE_VIDEO = 1;
+    private static final int TYPE_VIDEO_NOAUDIO = 2;
 
     private static final String STORY_KEY = "story";
     
@@ -65,18 +66,30 @@ public class Story implements JSONBinder<Story> {
     }
 
     /**
-     * Take an array of Stories and returns all of them.......
+     * Take an array of Stories and returns what is downloadable.
+     * USELESS: Stories are always downloadable.
      *
      * @param input the array of Snaps to filter.
-     * @return the snaps that are downloadable (media and unviewed).
+     * @return the snaps that are downloadable.
      */
     public static Story[] filterDownloadable(Story[] input) {
-        ArrayList<Story> result = new ArrayList<Story>();
-        for (Story s : input) {
-            result.add(s);
+        List<Story> downloadable = new ArrayList<Story>();
+        for(Story s: input){
+            if(s.isDownloadable()){
+                downloadable.add(s);
+            }
         }
+        return (Story[])downloadable.toArray();
+    }
 
-        return result.toArray(new Story[result.size()]);
+    /**
+     * Check if the story is downloadable.
+     * USELESS: Stories are always downloadable.
+     *
+     * @return true if the story is downloadable.
+     */
+    public boolean isDownloadable(){
+        return true;
     }
 
     /**

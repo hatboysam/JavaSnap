@@ -30,47 +30,47 @@ public class Snapchat {
     /**
      * POST parameter keys for sending requests to Snapchat.
      */
-    public static final String USERNAME_KEY = "username";
-    public static final String PASSWORD_KEY = "password";
-    public static final String TIMESTAMP_KEY = "timestamp";
-    public static final String REQ_TOKEN_KEY = "req_token";
-    public static final String AUTH_TOKEN_KEY = "auth_token";
-    public static final String ID_KEY = "id";
-    public static final String SNAPS_KEY = "snaps";
-    public static final String MY_STORIES_KEY = "my_stories";
-    public static final String FRIENDS_STORIES_KEY = "friend_stories";
-    public static final String FRIENDS_KEY = "friends";
-    public static final String MEDIA_ID_KEY = "media_id";
-    public static final String CLIENT_ID_KEY = "client_id";
-    public static final String CAPTION_TEXT_DISPLAY_KEY = "caption_text_display";
-    public static final String TYPE_KEY = "type";
-    public static final String DATA_KEY = "data";
-    public static final String ZIPPED_KEY = "zipped";
-    public static final String TIME_KEY = "time";
-    public static final String RECIPIENT_KEY = "recipient";
-    public static final String ADDED_FRIENDS_TIMESTAMP_KEY = "added_friends_timestamp";
-    public static final String JSON_KEY = "json";
-    public static final String EVENTS_KEY = "events";
-    public static final String LOGGED_KEY = "logged";
+    private static final String USERNAME_KEY = "username";
+    private static final String PASSWORD_KEY = "password";
+    private static final String TIMESTAMP_KEY = "timestamp";
+    private static final String REQ_TOKEN_KEY = "req_token";
+    private static final String AUTH_TOKEN_KEY = "auth_token";
+    private static final String ID_KEY = "id";
+    private static final String SNAPS_KEY = "snaps";
+    private static final String MY_STORIES_KEY = "my_stories";
+    private static final String FRIENDS_STORIES_KEY = "friend_stories";
+    private static final String FRIENDS_KEY = "friends";
+    private static final String MEDIA_ID_KEY = "media_id";
+    private static final String CLIENT_ID_KEY = "client_id";
+    private static final String CAPTION_TEXT_DISPLAY_KEY = "caption_text_display";
+    private static final String TYPE_KEY = "type";
+    private static final String DATA_KEY = "data";
+    private static final String ZIPPED_KEY = "zipped";
+    private static final String TIME_KEY = "time";
+    private static final String RECIPIENT_KEY = "recipient";
+    private static final String ADDED_FRIENDS_TIMESTAMP_KEY = "added_friends_timestamp";
+    private static final String JSON_KEY = "json";
+    private static final String EVENTS_KEY = "events";
+    private static final String LOGGED_KEY = "logged";
 
     /**
      * Paths for various Snapchat actions, relative to BASE_URL.
      */
-    public static final String LOGIN_PATH = "bq/login";
-    public static final String UPLOAD_PATH = "bq/upload";
-    public static final String SEND_PATH = "ph/send";
-    public static final String STORY_PATH = "bq/post_story";
-    public static final String DOUBLE_PATH = "bq/double_post";
-    public static final String BLOB_PATH = "ph/blob";
-    //EXTRAS by LIAM COTTLE
-    public static final String FRIEND_STORIES_PATH = "bq/stories";
-    public static final String STORY_BLOB_PATH = "bq/story_blob";
-    public static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
+    private static final String LOGIN_PATH = "bq/login";
+    private static final String UPLOAD_PATH = "bq/upload";
+    private static final String SEND_PATH = "ph/send";
+    private static final String STORY_PATH = "bq/post_story";
+    private static final String DOUBLE_PATH = "bq/double_post";
+    private static final String BLOB_PATH = "ph/blob";
+
+    private static final String FRIEND_STORIES_PATH = "bq/stories";
+    private static final String STORY_BLOB_PATH = "bq/story_blob";
+    private static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
     
     /**
      * Static members for forming HTTP requests.
      */
-    public static final String BASE_URL = "https://feelinsonice-hrd.appspot.com/";
+    private static final String BASE_URL = "https://feelinsonice-hrd.appspot.com/";
     private static final String JSON_TYPE_KEY = "accept";
     private static final String JSON_TYPE = "application/json";
     private static final String USER_AGENT_KEY = "User-Agent";
@@ -175,7 +175,7 @@ public class Snapchat {
     }
 
     /**
-     * Get an array of Snap objects.
+     * Get received and sent snaps.
      * @return a Snap[]
      */
     public Snap[] getSnaps() {

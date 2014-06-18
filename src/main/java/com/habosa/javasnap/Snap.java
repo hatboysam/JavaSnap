@@ -8,27 +8,28 @@ import java.util.Arrays;
 
 public class Snap implements JSONBinder<Snap> {
 
-    public static int TYPE_IMAGE = 0;
-    public static int TYPE_VIDEO = 1;
-    public static int TYPE_VIDEO_NOAUDIO = 2;
-    public static int TYPE_FRIEND_REQUEST = 3;
-    public static int TYPE_FRIEND_REQUEST_IMAGE = 4;
-    public static int TYPE_FRIEND_REQUEST_VIDEO = 5;
-    public static int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 5;
+    private static final int TYPE_IMAGE = 0;
+    private static final int TYPE_VIDEO = 1;
+    private static final int TYPE_VIDEO_NOAUDIO = 2;
+    private static final int TYPE_FRIEND_REQUEST = 3;
+    private static final int TYPE_FRIEND_REQUEST_IMAGE = 4;
+    private static final int TYPE_FRIEND_REQUEST_VIDEO = 5;
+    private static final int TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO = 6;
 
-    public static int NONE = -1;
-    public static int SENT = 0;
-    public static int DELIVERED = 1;
-    public static int VIEWED = 2;
-    public static int SCREENSHOT = 3;
+    private static final int NONE = -1;
+    private static final int SENT = 0;
+    private static final int DELIVERED = 1;
+    private static final int VIEWED = 2;
+    private static final int SCREENSHOT = 3;
 
-    private static final String ID_KEY = "id";
-    private static final String SENDER_KEY = "sn";
-    private static final String RECIPENT_KEY = "rp";
-    private static final String TYPE_KEY = "m";
-    private static final String STATE_KEY = "st";
-    private static final String TIME_KEY = "t";
-    private static final String SENTTIME_KEY = "sts";
+    private static final String ID_KEY = "id"; //Always : Snap ID.
+    private static final String SENTTIME_KEY = "sts"; //Always : Snaps sent time.
+    private static final String LAST_INTERACTION_TIME_KEY = "ts"; //Always : Recipient : ts == sts. Sender : Last interaction time.
+    private static final String TYPE_KEY = "m"; //Always : Image or Video
+    private static final String STATE_KEY = "st"; //Always : Sent, Delivered, Viewed, Screnshot.
+    private static final String SENDER_KEY = "sn"; //Only there for recipient : Sender username.
+    private static final String RECIPENT_KEY = "rp"; //Only there for sender : Recipient username.
+    private static final String TIME_KEY = "t"; //Unseen snaps only : How long can it be viewed for.
     private static final String CAPTION_KEY = "caption_text_display";
 
     private String id;
@@ -38,36 +39,36 @@ public class Snap implements JSONBinder<Snap> {
     private int state;
     private int time;
     private int senttime;
-    
+    private int lastInteractionTime;
+
     private String caption;
 
     public Snap() { }
 
     public Snap bind(JSONObject obj) {
+        System.out.println(obj.toString());
         // Check for fields that always exist
         try {
             this.id = obj.getString(ID_KEY);
             this.type = obj.getInt(TYPE_KEY);
             this.state = obj.getInt(STATE_KEY);
+            this.lastInteractionTime = obj.getInt(LAST_INTERACTION_TIME_KEY);
             this.senttime = obj.getInt(SENTTIME_KEY);
+
+            if(obj.has(SENDER_KEY)){
+                this.sender = obj.getString(SENDER_KEY);
+            }
+
+            if(obj.has(RECIPENT_KEY)){
+                this.recipient = obj.getString(RECIPENT_KEY);
+            }
+
         } catch (JSONException e) {
             e.printStackTrace();
             return this;
         }
 
-        // Check sender or recipient separately
-        try {
-            this.sender = obj.getString(SENDER_KEY);
-        } catch (JSONException e) {
-            // Ignore
-        }
-        
-        try {
-            this.recipient = obj.getString(RECIPENT_KEY);
-        } catch (JSONException e) {
-            // Ignore
-        }
-        
+
         try {
             this.caption = obj.getString(CAPTION_KEY);
         } catch (JSONException e) {
@@ -119,7 +120,7 @@ public class Snap implements JSONBinder<Snap> {
      * @return true if it has been viewed, false otherwise.
      */
     public boolean isViewed() {
-        return (state == VIEWED);
+        return (state == VIEWED || state == SCREENSHOT);
     }
 
     /**
@@ -146,7 +147,16 @@ public class Snap implements JSONBinder<Snap> {
      * @return true if it is a video or an image, false if other.
      */
     public boolean isMedia() {
-        return (type <= TYPE_VIDEO);
+        return (isImage() || isVideo());
+    }
+
+    /**
+     * Determine if a snap has been screenshoted.
+     *
+     * @return true if it is screenshoted.
+     */
+    public boolean isScreenshoted(){
+        return state == SCREENSHOT;
     }
 
     /**
@@ -162,30 +172,46 @@ public class Snap implements JSONBinder<Snap> {
         return (type == TYPE_FRIEND_REQUEST || type == TYPE_FRIEND_REQUEST_IMAGE || type == TYPE_FRIEND_REQUEST_VIDEO || type == TYPE_FRIEND_REQUEST_VIDEO_NOAUDIO);
     }
 
+    /**
+     * Get this snap ID.
+     *
+     * @return the snap ID
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Get this snap sender username.
+     *
+     * @return the sender username.
+     */
     public String getSender() {
         return sender;
     }
 
+    /**
+     * Get this snap recipient username.
+     *
+     * @return the recipient username.
+     */
     public String getRecipient() {
         return recipient;
-    }
-
-    public int getType() {
-        return type;
-    }
-
-    public int getState() {
-        return state;
     }
 
     public int getTime() {
         return time;
     }
-    
+
+    /**
+     * Last interaction time. For recipients, this is the same as sent time.
+     *
+     * @return last interaction time.
+     */
+    public int getLastInteractionTime(){
+        return this.lastInteractionTime;
+    }
+
     public int getSentTime() {
         return senttime;
     }
