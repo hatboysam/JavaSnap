@@ -23,9 +23,9 @@ public class Snapchat {
     /**
      * Last response received.  Used for error reporting.
      */
-    private static String lastRequestPath;
-    private static HttpResponse lastResponse;
-    private static Class lastResponseBodyClass;
+    public static String lastRequestPath;
+    public static HttpResponse lastResponse;
+    public static Class lastResponseBodyClass;
 
     /**
      * POST parameter keys for sending requests to Snapchat.
