@@ -36,8 +36,9 @@ public class Snapchat {
     private static final String REQ_TOKEN_KEY = "req_token";
     private static final String AUTH_TOKEN_KEY = "auth_token";
     private static final String ID_KEY = "id";
-    private static final String SNAPS_KEY = "snaps";
-    private static final String MY_STORIES_KEY = "my_stories";
+    private static final String SNAP_KEY = "snap";
+    private static final String CHAT_MESSAGE_KEY = "chat_message";
+    private static final String MESSAGES_KEY = "messages";
     private static final String FRIENDS_STORIES_KEY = "friend_stories";
     private static final String FRIENDS_KEY = "friends";
     private static final String MEDIA_ID_KEY = "media_id";
@@ -54,15 +55,27 @@ public class Snapchat {
     private static final String LOGGED_KEY = "logged";
 
     /**
+     * Paths for various Snapchat infos in loginObj_full
+     */
+    private static final String UPDATES_RESPONSE_KEY = "updates_response";
+    private static final String MESSAGING_GATEWAY_INFO_RESPONSE_KEY = "messaging_gateway_info";
+    private static final String STORIES_RESPONSE_KEY = "stories_response";
+    private static final String CONVERSATIONS_RESPONSE_KEY = "conversations_response";
+
+    /**
+     * Paths for various Snapchat infos in a specific loginObj
+     */
+    private static final String CONVERSATION_MESSAGES_KEY = "conversation_messages";
+
+    /**
      * Paths for various Snapchat actions, relative to BASE_URL.
      */
-    private static final String LOGIN_PATH = "bq/login";
+    private static final String LOGIN_PATH = "loq/login";
     private static final String UPLOAD_PATH = "bq/upload";
     private static final String SEND_PATH = "ph/send";
     private static final String STORY_PATH = "bq/post_story";
     private static final String DOUBLE_PATH = "bq/double_post";
     private static final String BLOB_PATH = "ph/blob";
-
     private static final String FRIEND_STORIES_PATH = "bq/stories";
     private static final String STORY_BLOB_PATH = "bq/story_blob";
     private static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
@@ -79,28 +92,42 @@ public class Snapchat {
     /**
      * Local variables
      */
-    private JSONObject loginObj;
+    private JSONObject loginObj_full;
+    private JSONObject loginObj_updates;
+    private JSONObject loginObj_messaging_gateway_info;
+    private JSONObject loginObj_stories;
+    private JSONArray loginObj_conversations;
+
     private String username;
     private String authToken;
     private String friendsTimestamp;
     private Friend[] friends;
     private Story[] stories;
     private Snap[] snaps;
+    private Message[] messages;
     private long lastRefreshed;
     
     /**
      * Build the Snapchat object
      * @see Snapchat#login(String, String)
      */
-    private Snapchat(JSONObject loginObj){
-        this.loginObj = loginObj;
+    private Snapchat(JSONObject loginObj_full){
+        this.loginObj_full = loginObj_full;
         try {
-            this.username = loginObj.getString(USERNAME_KEY);
-            this.authToken = loginObj.getString(AUTH_TOKEN_KEY);
-            this.friendsTimestamp = loginObj.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
+            //Setup all inner json objects
+            System.out.println(loginObj_full.toString());
+            this.loginObj_updates = loginObj_full.getJSONObject(UPDATES_RESPONSE_KEY);
+            this.loginObj_messaging_gateway_info = loginObj_full.getJSONObject(MESSAGING_GATEWAY_INFO_RESPONSE_KEY);
+            this.loginObj_stories = loginObj_full.getJSONObject(STORIES_RESPONSE_KEY);
+            this.loginObj_conversations = loginObj_full.getJSONArray(CONVERSATIONS_RESPONSE_KEY);
+
+            //Setup all local variables
+            this.username = this.loginObj_updates.getString(USERNAME_KEY);
+            this.authToken = this.loginObj_updates.getString(AUTH_TOKEN_KEY);
+            this.friendsTimestamp = this.loginObj_updates.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
             refresh();
         } catch (JSONException e) {
-            //TODO Something is wrong with the loginObj
+            //TODO Something is wrong with the loginObj_full
             e.printStackTrace();
         }
     }
@@ -129,11 +156,10 @@ public class Snapchat {
         try {
             HttpResponse<JsonNode> resp = requestJson(LOGIN_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
-            if(obj.has(LOGGED_KEY) && obj.getBoolean(LOGGED_KEY)){
+            if(obj.has(UPDATES_RESPONSE_KEY) && obj.getJSONObject(UPDATES_RESPONSE_KEY).getBoolean(LOGGED_KEY)){
                 return new Snapchat(obj);
-            }else{
-                return null;
             }
+            return null;
         } catch (UnirestException e) {
             e.printStackTrace();
             return null;
@@ -152,6 +178,7 @@ public class Snapchat {
         getStories();
         getSnaps();
         getFriends();
+        getMessages();
         lastRefreshed = new Date().getTime();
     }
 
@@ -164,7 +191,7 @@ public class Snapchat {
             return this.friends;
         }else{
             try {
-                JSONArray friendsArr = this.loginObj.getJSONArray(FRIENDS_KEY);
+                JSONArray friendsArr = this.loginObj_updates.getJSONArray(FRIENDS_KEY);
                 List<Friend> resultList = bindArray(friendsArr, Friend.class);
                 this.friends = resultList.toArray(new Friend[resultList.size()]);
                 return this.friends;
@@ -183,12 +210,50 @@ public class Snapchat {
             return this.snaps;
         }else{
             try {
-                JSONArray snapArr = this.loginObj.getJSONArray(SNAPS_KEY);
-                List<Snap> resultList = bindArray(snapArr, Snap.class);
+                JSONArray snapsArray = new JSONArray();
+                for(int i = 0; i < this.loginObj_conversations.length(); i++){
+                    JSONObject conversation_messages = this.loginObj_conversations.getJSONObject(i).getJSONObject(CONVERSATION_MESSAGES_KEY);
+                    JSONArray messages = conversation_messages.getJSONArray(MESSAGES_KEY);
+                    for(int m = 0; m < messages.length(); m++){
+                        JSONObject message = messages.getJSONObject(m);
+                        if(message.has(SNAP_KEY)){
+                            snapsArray.put(message.getJSONObject(SNAP_KEY));
+                        }
+                    }
+                }
+                List<Snap> resultList = bindArray(snapsArray, Snap.class);
                 this.snaps = resultList.toArray(new Snap[resultList.size()]);
                 return this.snaps;
             } catch (JSONException e) {
                 return new Snap[0];
+            }
+        }
+    }
+
+    /**
+     * Get all received messages.
+     * @return an array of Message.
+     */
+    public Message[] getMessages(){
+        if(this.messages != null){
+            return this.messages;
+        }else{
+            try {
+                JSONArray snapsArray = new JSONArray();
+                for(int i = 0; i < this.loginObj_conversations.length(); i++){
+                    JSONObject conversation_messages = this.loginObj_conversations.getJSONObject(i).getJSONObject(CONVERSATION_MESSAGES_KEY);
+                    JSONArray messages = conversation_messages.getJSONArray(MESSAGES_KEY);
+                    for(int m = 0; m < messages.length(); m++){
+                        JSONObject message = messages.getJSONObject(m);
+                        if(message.has(CHAT_MESSAGE_KEY)){
+                            snapsArray.put(message.getJSONObject(CHAT_MESSAGE_KEY));
+                        }
+                    }                }
+                List<Message> resultList = bindArray(snapsArray, Message.class);
+                this.messages = resultList.toArray(new Message[resultList.size()]);
+                return this.messages;
+            } catch (JSONException e) {
+                return new Message[0];
             }
         }
     }
