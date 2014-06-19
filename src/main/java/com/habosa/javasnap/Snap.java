@@ -30,7 +30,6 @@ public class Snap implements JSONBinder<Snap> {
     private static final String SENDER_KEY = "sn"; //Only there for recipient : Sender username.
     private static final String RECIPENT_KEY = "rp"; //Only there for sender : Recipient username.
     private static final String TIME_KEY = "t"; //Unseen snaps only : How long can it be viewed for.
-    private static final String CAPTION_KEY = "caption_text_display";
 
     private String id;
     private String sender;
@@ -46,7 +45,6 @@ public class Snap implements JSONBinder<Snap> {
     public Snap() { }
 
     public Snap bind(JSONObject obj) {
-        System.out.println(obj.toString());
         // Check for fields that always exist
         try {
             this.id = obj.getString(ID_KEY);
@@ -68,14 +66,8 @@ public class Snap implements JSONBinder<Snap> {
             return this;
         }
 
-
-        try {
-            this.caption = obj.getString(CAPTION_KEY);
-        } catch (JSONException e) {
-            this.caption = "";
-        }
-
         // Check for time separately because it may not exist.
+        // Only exist when the snap hasn't been viewed.
         try {
             this.time = obj.getInt(TIME_KEY);
         } catch (JSONException e) {
