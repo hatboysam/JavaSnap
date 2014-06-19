@@ -113,7 +113,6 @@ public class Snapchat {
         try {
             //Setup all inner json objects
             setupLoginJSONObjects(loginObj_full);
-            System.out.println(loginObj_full.toString());
 
             //Setup all local variables
             this.username = this.loginObj_updates.getString(USERNAME_KEY);
@@ -164,23 +163,25 @@ public class Snapchat {
 
     /**
      * Refresh your snaps, friends, stories.
+     *
+     * @return true if successful, otherwise false.
      */
-    public void refresh() {
-        //TODO Get update. There is a better way than refreshing loginObj by relogging in.
-        //TODO : Nothing is refreshed here except stories.
+    public boolean refresh() {
         if(updateLoginObj()){
-            System.out.println("Successfully updated loginObj");
-            System.out.println("New OBJ : " + this.loginObj_full.toString());
             this.snaps = null;
             this.messages = null;
             this.stories = null;
             this.friends = null;
+
+            getSnaps();
+            getMessages();
+            getStories();
+            getFriends();
+
+            lastRefreshed = new Date().getTime();
+            return true;
         }
-        getSnaps();
-        getMessages();
-        getStories();
-        getFriends();
-        lastRefreshed = new Date().getTime();
+        return false;
     }
 
     /**
@@ -548,7 +549,6 @@ public class Snapchat {
         try {
             HttpResponse<JsonNode> resp = requestJson(ALL_UPDATES_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
-            System.out.println("UPDATE ALL " + obj.toString());
             if(obj.has(UPDATES_RESPONSE_KEY) && obj.getJSONObject(UPDATES_RESPONSE_KEY).getBoolean(LOGGED_KEY)){
                 return setupLoginJSONObjects(obj);
             }
@@ -667,19 +667,19 @@ public class Snapchat {
                 return null;
             }
         } catch (IOException e) {
-            System.out.println(e);
+            e.printStackTrace();
             return null;
         } catch (Encryption.EncryptionException e) {
-            System.out.println(e);
+            e.printStackTrace();
             return null;
         } catch (UnirestException e) {
-            System.out.println(e);
+            e.printStackTrace();
             return null;
         } catch (Exception e) {
-            System.out.println(e);
+            e.printStackTrace();
             return null;
         } catch(OutOfMemoryError e){
-            System.out.println(e);
+            e.printStackTrace();
             return null;
         }
     }
