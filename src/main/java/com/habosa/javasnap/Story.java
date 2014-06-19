@@ -37,6 +37,7 @@ public class Story implements JSONBinder<Story> {
     public Story() { }
 
     public Story bind(JSONObject obj) {
+        System.out.println("Story : " + obj.toString());
         try {
             this.id = obj.getString(MEDIA_ID_KEY);
             this.media_key = obj.getString(MEDIA_KEY_KEY);

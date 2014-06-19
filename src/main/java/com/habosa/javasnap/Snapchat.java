@@ -39,7 +39,8 @@ public class Snapchat {
     private static final String SNAP_KEY = "snap";
     private static final String CHAT_MESSAGE_KEY = "chat_message";
     private static final String MESSAGES_KEY = "messages";
-    private static final String FRIENDS_STORIES_KEY = "friend_stories";
+    private static final String FRIEND_STORIES_KEY = "friend_stories";
+    private static final String STORIES_KEY = "stories";
     private static final String FRIENDS_KEY = "friends";
     private static final String MEDIA_ID_KEY = "media_id";
     private static final String CLIENT_ID_KEY = "client_id";
@@ -71,10 +72,11 @@ public class Snapchat {
      * Paths for various Snapchat actions, relative to BASE_URL.
      */
     private static final String LOGIN_PATH = "loq/login";
+    private static final String ALL_UPDATES_PATH = "/loq/all_updates";
     private static final String UPLOAD_PATH = "bq/upload";
-    private static final String SEND_PATH = "ph/send";
+    private static final String SEND_PATH = "ph/send"; //TODO : UPDATE PATH
     private static final String STORY_PATH = "bq/post_story";
-    private static final String DOUBLE_PATH = "bq/double_post";
+    private static final String DOUBLE_PATH = "bq/double_post"; //TODO : UPDATE PATH
     private static final String BLOB_PATH = "ph/blob";
     private static final String FRIEND_STORIES_PATH = "bq/stories";
     private static final String STORY_BLOB_PATH = "bq/story_blob";
@@ -112,20 +114,15 @@ public class Snapchat {
      * @see Snapchat#login(String, String)
      */
     private Snapchat(JSONObject loginObj_full){
-        this.loginObj_full = loginObj_full;
         try {
             //Setup all inner json objects
+            setupLoginJSONObjects(loginObj_full);
             System.out.println(loginObj_full.toString());
-            this.loginObj_updates = loginObj_full.getJSONObject(UPDATES_RESPONSE_KEY);
-            this.loginObj_messaging_gateway_info = loginObj_full.getJSONObject(MESSAGING_GATEWAY_INFO_RESPONSE_KEY);
-            this.loginObj_stories = loginObj_full.getJSONObject(STORIES_RESPONSE_KEY);
-            this.loginObj_conversations = loginObj_full.getJSONArray(CONVERSATIONS_RESPONSE_KEY);
 
             //Setup all local variables
             this.username = this.loginObj_updates.getString(USERNAME_KEY);
             this.authToken = this.loginObj_updates.getString(AUTH_TOKEN_KEY);
             this.friendsTimestamp = this.loginObj_updates.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
-            refresh();
         } catch (JSONException e) {
             //TODO Something is wrong with the loginObj_full
             e.printStackTrace();
@@ -172,13 +169,22 @@ public class Snapchat {
     /**
      * Refresh your snaps, friends, stories.
      */
+
     public void refresh() {
         //TODO Get update. There is a better way than refreshing loginObj by relogging in.
         //TODO : Nothing is refreshed here except stories.
-        getStories();
+        if(updateLoginObj()){
+            System.out.println("Successfully updated loginObj");
+            System.out.println("New OBJ : " + this.loginObj_full.toString());
+            this.snaps = null;
+            this.messages = null;
+            this.stories = null;
+            this.friends = null;
+        }
         getSnaps();
-        getFriends();
         getMessages();
+        getStories();
+        getFriends();
         lastRefreshed = new Date().getTime();
     }
 
@@ -209,24 +215,8 @@ public class Snapchat {
         if(this.snaps != null){
             return this.snaps;
         }else{
-            try {
-                JSONArray snapsArray = new JSONArray();
-                for(int i = 0; i < this.loginObj_conversations.length(); i++){
-                    JSONObject conversation_messages = this.loginObj_conversations.getJSONObject(i).getJSONObject(CONVERSATION_MESSAGES_KEY);
-                    JSONArray messages = conversation_messages.getJSONArray(MESSAGES_KEY);
-                    for(int m = 0; m < messages.length(); m++){
-                        JSONObject message = messages.getJSONObject(m);
-                        if(message.has(SNAP_KEY)){
-                            snapsArray.put(message.getJSONObject(SNAP_KEY));
-                        }
-                    }
-                }
-                List<Snap> resultList = bindArray(snapsArray, Snap.class);
-                this.snaps = resultList.toArray(new Snap[resultList.size()]);
-                return this.snaps;
-            } catch (JSONException e) {
-                return new Snap[0];
-            }
+            parseSnapsAndMessages();
+            return this.snaps;
         }
     }
 
@@ -238,23 +228,8 @@ public class Snapchat {
         if(this.messages != null){
             return this.messages;
         }else{
-            try {
-                JSONArray snapsArray = new JSONArray();
-                for(int i = 0; i < this.loginObj_conversations.length(); i++){
-                    JSONObject conversation_messages = this.loginObj_conversations.getJSONObject(i).getJSONObject(CONVERSATION_MESSAGES_KEY);
-                    JSONArray messages = conversation_messages.getJSONArray(MESSAGES_KEY);
-                    for(int m = 0; m < messages.length(); m++){
-                        JSONObject message = messages.getJSONObject(m);
-                        if(message.has(CHAT_MESSAGE_KEY)){
-                            snapsArray.put(message.getJSONObject(CHAT_MESSAGE_KEY));
-                        }
-                    }                }
-                List<Message> resultList = bindArray(snapsArray, Message.class);
-                this.messages = resultList.toArray(new Message[resultList.size()]);
-                return this.messages;
-            } catch (JSONException e) {
-                return new Message[0];
-            }
+            parseSnapsAndMessages();
+            return this.messages;
         }
     }
 
@@ -267,32 +242,22 @@ public class Snapchat {
             return this.stories;
         }else{
             try {
-                Map<String, Object> params = new HashMap<String, Object>();
-                params.put(USERNAME_KEY, username);
-                Long timestamp = getTimestamp();
-                params.put(TIMESTAMP_KEY, timestamp);
-                params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
-
-                HttpResponse<JsonNode> resp = requestJson(FRIEND_STORIES_PATH, params, null);
-                JSONObject obj = resp.getBody().getObject();
-                JSONArray storyArr = obj.getJSONArray(FRIENDS_STORIES_KEY);
-
-                JSONArray storiesArray = new JSONArray();
-
-                for (int i=0; i<storyArr.length(); i++) {
-                    JSONArray items = storyArr.getJSONObject(i).getJSONArray("stories");
-                    for (int j=0; j<items.length(); j++) {
-                        JSONObject _story = items.getJSONObject(j).getJSONObject("story");
-                        storiesArray.put(_story);
+                JSONArray stories_list = new JSONArray();
+                JSONArray friend_stories = this.loginObj_stories.getJSONArray(FRIEND_STORIES_KEY);
+                //For each friend having posted a story
+                for(int i = 0; i < friend_stories.length(); i++){
+                    //Get friend story/stories
+                    JSONArray stories = friend_stories.getJSONObject(i).getJSONArray(STORIES_KEY);
+                    //For each story this friend has posted
+                    for(int s = 0; s < stories.length(); s++){
+                        stories_list.put(stories.get(s));
                     }
                 }
-
-                List<Story> resultList = bindArray(storiesArray, Story.class);
-                this.stories = resultList.toArray(new Story[resultList.size()]);
+                List<Story> stories = bindArray(stories_list, Story.class);
+                this.stories = stories.toArray(new Story[stories.size()]);
                 return this.stories;
-            } catch (UnirestException e) {
-                return new Story[0];
             } catch (JSONException ex) {
+                ex.printStackTrace();
                 return new Story[0];
             }
         }
@@ -398,6 +363,41 @@ public class Snapchat {
     /**
      * ==================================================  PRIVATE NON-STATIC METHODS REGION ==================================================
      */
+
+    /**
+     * Parses Snaps and Messages from the loginObj_conversations.
+     * Saves the result in variables.
+     */
+    private void parseSnapsAndMessages(){
+        try {
+            JSONArray snapsArray = new JSONArray();
+            JSONArray messagesArray = new JSONArray();
+            //For each inner JSONObject  containing conversations per username
+            for(int i = 0; i < this.loginObj_conversations.length(); i++){
+                //Inner JSONObject containing conversations (snaps & chat messages)
+                JSONObject conversation_messages = this.loginObj_conversations.getJSONObject(i).getJSONObject(CONVERSATION_MESSAGES_KEY);
+                //Array of messages (snap or chat message)
+                JSONArray messages = conversation_messages.getJSONArray(MESSAGES_KEY);
+                for(int m = 0; m < messages.length(); m++){
+                    //Get the JSONObject representing the message(snap or chat message)
+                    JSONObject message = messages.getJSONObject(m);
+                    //if it is a snap
+                    if(message.has(SNAP_KEY)){
+                        snapsArray.put(message.getJSONObject(SNAP_KEY));
+                    }else if(message.has(CHAT_MESSAGE_KEY)){
+                        messagesArray.put(message.getJSONObject(CHAT_MESSAGE_KEY));
+                    }
+                }
+            }
+            List<Snap> snapsList = bindArray(snapsArray, Snap.class);
+            List<Message> messagesList = bindArray(messagesArray, Message.class);
+            this.snaps = snapsList.toArray(new Snap[snapsList.size()]);
+            this.messages = messagesList.toArray(new Message[messagesList.size()]);
+        } catch (JSONException e) {
+            this.snaps = new Snap[0];
+            this.messages = new Message[0];
+        }
+    }
 
      /**
      * Send a snap that has already been uploaded.
@@ -509,6 +509,60 @@ public class Snapchat {
                 return false;
             }
         } catch (UnirestException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Setup all loginObj variables from the full loginObj
+     *
+     * @param newLoginObj_full full loginObj received from Snapchat Server.
+     * @return true if successful, otherwise false.
+     */
+    private boolean setupLoginJSONObjects(JSONObject newLoginObj_full){
+        try {
+            this.loginObj_full = newLoginObj_full;
+            this.loginObj_updates = loginObj_full.getJSONObject(UPDATES_RESPONSE_KEY);
+            this.loginObj_messaging_gateway_info = loginObj_full.getJSONObject(MESSAGING_GATEWAY_INFO_RESPONSE_KEY);
+            this.loginObj_stories = loginObj_full.getJSONObject(STORIES_RESPONSE_KEY);
+            this.loginObj_conversations = loginObj_full.getJSONArray(CONVERSATIONS_RESPONSE_KEY);
+            return true;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Fetch latest version of full loginObj from Snapchat Server.
+     * @return true if the update is successful, otherwise false.
+     */
+    private boolean updateLoginObj(){
+        Map<String, Object> params = new HashMap<String, Object>();
+
+        // Add username and password
+        params.put(USERNAME_KEY, username);
+
+        // Add timestamp and requestJson token made using auth token
+        Long timestamp = getTimestamp();
+        String reqToken = TokenLib.requestToken(this.authToken, timestamp);
+
+        params.put(TIMESTAMP_KEY, timestamp.toString());
+        params.put(REQ_TOKEN_KEY, reqToken);
+
+        try {
+            HttpResponse<JsonNode> resp = requestJson(ALL_UPDATES_PATH, params, null);
+            JSONObject obj = resp.getBody().getObject();
+            System.out.println("UPDATE ALL " + obj.toString());
+            if(obj.has(UPDATES_RESPONSE_KEY) && obj.getJSONObject(UPDATES_RESPONSE_KEY).getBoolean(LOGGED_KEY)){
+                return setupLoginJSONObjects(obj);
+            }
+            return false;
+        } catch (UnirestException e) {
+            e.printStackTrace();
+            return false;
+        } catch (JSONException e) {
+            e.printStackTrace();
             return false;
         }
     }
