@@ -54,19 +54,15 @@ public class Snapchat {
     private static final String JSON_KEY = "json";
     private static final String EVENTS_KEY = "events";
     private static final String LOGGED_KEY = "logged";
+    private static final String CONVERSATION_MESSAGES_KEY = "conversation_messages";
 
     /**
-     * Paths for various Snapchat infos in loginObj_full
+     * Paths for various Snapchat groups in loginObj_full
      */
     private static final String UPDATES_RESPONSE_KEY = "updates_response";
     private static final String MESSAGING_GATEWAY_INFO_RESPONSE_KEY = "messaging_gateway_info";
     private static final String STORIES_RESPONSE_KEY = "stories_response";
     private static final String CONVERSATIONS_RESPONSE_KEY = "conversations_response";
-
-    /**
-     * Paths for various Snapchat infos in a specific loginObj
-     */
-    private static final String CONVERSATION_MESSAGES_KEY = "conversation_messages";
 
     /**
      * Paths for various Snapchat actions, relative to BASE_URL.
@@ -169,7 +165,6 @@ public class Snapchat {
     /**
      * Refresh your snaps, friends, stories.
      */
-
     public void refresh() {
         //TODO Get update. There is a better way than refreshing loginObj by relogging in.
         //TODO : Nothing is refreshed here except stories.

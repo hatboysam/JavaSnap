@@ -40,7 +40,6 @@ public class Story implements JSONBinder<Story> {
 
 
     public Story bind(JSONObject obj) {
-        System.out.println("Story : " + obj.toString());
         try {
             JSONObject storyObj = obj.getJSONObject(STORY_KEY);
             try {
