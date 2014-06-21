@@ -141,7 +141,7 @@ public class Message implements JSONBinder<Message> {
      * @return true if it is an image, otherwise false.
      */
     public boolean isMedia(){
-        return this.type == TYPE_MEDIA;
+        return this.type.equalsIgnoreCase(TYPE_MEDIA);
     }
 
     /**
@@ -150,7 +150,7 @@ public class Message implements JSONBinder<Message> {
      * @return true if it is a text message, otherwise false.
      */
     public boolean isTextMessage(){
-        return this.type == TYPE_TEXT;
+        return this.type.equalsIgnoreCase(TYPE_TEXT);
     }
 
     /**
