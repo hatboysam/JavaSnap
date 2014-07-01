@@ -392,6 +392,39 @@ public class Snapchat {
         }
         return false;
     }
+    
+    /**
+     * Delete a friend
+     *
+     * @param friend username to add.
+     * @return true if successful, otherwise false.
+     */
+    public boolean deleteFriend(String friend){
+        try {
+            Map<String, Object> params = new HashMap<String, Object>();
+
+            // Add timestamp and requestJson token made using auth token
+            Long timestamp = getTimestamp();
+            String reqToken = TokenLib.requestToken(this.authToken, timestamp);
+
+            //Add params
+            params.put(USERNAME_KEY, this.username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, reqToken);
+            params.put(ACTION_KEY, "delete");
+            params.put(FRIEND_KEY, friend);
+
+            //Make the request
+            HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
+            //The request seems to be a success even if you weren't already friends...
+            if (resp.getCode() == 200 || resp.getCode() == 201) {
+                return true;
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
     /**
      * ==================================================  PRIVATE NON-STATIC METHODS REGION ==================================================
