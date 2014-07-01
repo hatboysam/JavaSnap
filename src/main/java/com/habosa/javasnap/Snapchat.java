@@ -56,7 +56,9 @@ public class Snapchat {
     private static final String LOGGED_KEY = "logged";
     private static final String CONVERSATION_MESSAGES_KEY = "conversation_messages";
     private static final String RECIPIENT_USERNAMES = "recipient_usernames";
-
+    private static final String ACTION_KEY = "action";
+    private static final String FRIEND_KEY = "friend";
+    
     /**
      * Paths for various Snapchat groups in loginObj_full
      */
@@ -79,6 +81,7 @@ public class Snapchat {
     private static final String STORY_BLOB_PATH = "bq/story_blob";
     private static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
     private static final String CHAT_TYPING_PATH = "bq/chat_typing";
+    private static final String FRIEND_PATH = "bq/friend";
     
     /**
      * Static members for forming HTTP requests.
@@ -383,6 +386,43 @@ public class Snapchat {
             HttpResponse<String> resp = requestString(CHAT_TYPING_PATH, params, null);
             System.out.println(resp.getBody().toString());
             if (resp.getCode() == 200 || resp.getCode() == 201) {
+                return true;
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    /**
+     * Add a friend
+     *
+     * @param friend username to add.
+     * @return true if successful, otherwise false.
+     */
+    public boolean addFriend(String friend){
+        try {
+            Map<String, Object> params = new HashMap<String, Object>();
+
+            // Add timestamp and requestJson token made using auth token
+            Long timestamp = getTimestamp();
+            String reqToken = TokenLib.requestToken(this.authToken, timestamp);
+
+            //Add params
+            params.put(USERNAME_KEY, this.username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, reqToken);
+            params.put(ACTION_KEY, "add");
+            params.put(FRIEND_KEY, friend);
+
+            //Make the request
+            HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
+            if (resp.getCode() == 200 || resp.getCode() == 201) {
+                if(resp.getBody().toString().toLowerCase().contains("Sorry!".toLowerCase())){
+                  return false;
+                }
                 return true;
             }
         } catch (UnirestException e) {
