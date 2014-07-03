@@ -14,6 +14,10 @@ public class Story implements JSONBinder<Story> {
     private static final int TYPE_VIDEO_NOAUDIO = 2;
 
     private static final String STORY_KEY = "story";
+    private static final String STORY_NOTES_KEY = "story_notes";
+    private static final String STORY_EXTRAS_KEY = "story_extras";
+    private static final String VIEWER_KEY = "viewer";
+    private static final String SCREENSHOTTED_KEY = "screenshotted";
     
     private static final String MEDIA_ID_KEY = "media_id";
     private static final String MEDIA_KEY_KEY = "media_key";
@@ -32,7 +36,12 @@ public class Story implements JSONBinder<Story> {
     private int type;
     private int time;
     private int time_left;
+    private Long timestamp;
     private boolean viewed;
+    private boolean isMine;
+    private Viewer[] viewers;
+    private int screenshots;
+    private int views;
     
     private String caption;
 
@@ -43,16 +52,20 @@ public class Story implements JSONBinder<Story> {
         try {
             JSONObject storyObj = obj.getJSONObject(STORY_KEY);
             try {
-
-                this.viewed = obj.getBoolean(VIEWED_KEY); //For some reason, this is not in the inner story json obj.
+              //Made this a seperate Try/Catch, as it fails for your own stories.
+              this.viewed = obj.getBoolean(VIEWED_KEY); //For some reason, this is not in the inner story json obj.
+            } catch (JSONException e) {
+              e.printStackTrace();
+            }
+            try {
                 this.id = storyObj.getString(MEDIA_ID_KEY);
                 this.media_key = storyObj.getString(MEDIA_KEY_KEY);
                 this.media_iv = storyObj.getString(MEDIA_IV_KEY);
                 this.type = storyObj.getInt(MEDIA_TYPE_KEY);
                 this.sender = storyObj.getString(SENDER_KEY);
+                this.timestamp = storyObj.getLong(TIMESTAMP_KEY);
             } catch (JSONException e) {
                 e.printStackTrace();
-                return this;
             }
 
             try {
@@ -66,11 +79,33 @@ public class Story implements JSONBinder<Story> {
                 this.time = storyObj.getInt(TIME_KEY);
                 this.time_left = storyObj.getInt(TIME_LEFT_KEY);
             } catch (JSONException e) {
-                return this;
+                e.printStackTrace();
             }
         } catch (JSONException e) {
             e.printStackTrace();
-            return this;
+        }
+        try {
+            JSONArray notesObj = obj.getJSONArray(STORY_NOTES_KEY);
+            List<Viewer> viewers = Snapchat.bindArray(notesObj, Viewer.class);
+            this.viewers = viewers.toArray(new Viewer[viewers.size()]);
+            if(this.viewers != null){
+              isMine = true;
+            }
+            else{
+              isMine = false;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            isMine = false;
+        }
+        try {
+            JSONObject extrasObj = obj.getJSONObject(STORY_EXTRAS_KEY);
+            screenshots = extrasObj.getInt("screenshot_count");
+            views = extrasObj.getInt("view_count");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            screenshots = 0;
+            views = 0;
         }
         return this;
     }
@@ -186,6 +221,15 @@ public class Story implements JSONBinder<Story> {
     public int getTimeLeft() {
         return time_left;
     }
+    
+    /**
+     * Get the timestamp of creation date for this story.
+     *
+     * @return unix timestamp of the creation date.
+     */
+    public Long getTimestamp() {
+        return timestamp;
+    }
 
     /**
      * Get the text of this story.
@@ -194,6 +238,42 @@ public class Story implements JSONBinder<Story> {
      */
     public String getCaption() {
         return caption;
+    }
+    
+    /**
+     * If the story belongs to us, thus will have viewers...
+     *
+     * @return boolean
+     */
+    public boolean isMine(){
+        return this.isMine;
+    }
+    
+    /**
+     * Get the viewers of this story.
+     *
+     * @return Viewer[] the viewers or null.
+     */
+    public Viewer[] getViewers() {
+        return viewers;
+    }
+    
+    /**
+     * Get the views count of this story.
+     *
+     * @return int the viewer count or 0 if not my story.
+     */
+    public int getViewCount() {
+        return views;
+    }
+    
+    /**
+     * Get the screenshots count of this story.
+     *
+     * @return int the screenshot count or 0 if not my story.
+     */
+    public int getScreenshotCount() {
+        return screenshots;
     }
 
     @Override
@@ -204,6 +284,8 @@ public class Story implements JSONBinder<Story> {
                 Integer.toString(type),
                 Integer.toString(time),
                 Integer.toString(time_left),
+                Integer.toString(views),
+                Integer.toString(screenshots),
                 caption
         };
         return Arrays.toString(attrs);
