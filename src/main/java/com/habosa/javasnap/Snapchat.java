@@ -456,6 +456,32 @@ public class Snapchat {
     }
 
     /**
+     * Parse a JSONArray into a list of type
+     *
+     * @param arr the JSON array
+     * @param clazz the class of type
+     * @return a list of type
+     */
+    public static <T> List<T> bindArray(JSONArray arr, Class<? extends JSONBinder<T>> clazz) {
+        try {
+            int length = arr.length();
+            List<T> result = new ArrayList<T>();
+            for (int i = 0; i < length; i++) {
+                JSONObject obj = arr.getJSONObject(i);
+                T bound = clazz.newInstance().bind(obj);
+                result.add(bound);
+            }
+            return result;
+        } catch (JSONException e) {
+            return new ArrayList<T>();
+        } catch (InstantiationException e) {
+            return new ArrayList<T>();
+        } catch (IllegalAccessException e) {
+            return new ArrayList<T>();
+        }
+    }
+
+    /**
      * ==================================================  PRIVATE NON-STATIC METHODS REGION ==================================================
      */
 
@@ -855,32 +881,6 @@ public class Snapchat {
     /**
      * ====================================================  PRIVATE STATIC METHODS REGION ====================================================
      */
-
-    /**
-     * Parse a JSONArray into a list of type
-     *
-     * @param arr the JSON array
-     * @param clazz the class of type
-     * @return a list of type
-     */
-    private static <T> List<T> bindArray(JSONArray arr, Class<? extends JSONBinder<T>> clazz) {
-        try {
-            int length = arr.length();
-            List<T> result = new ArrayList<T>();
-            for (int i = 0; i < length; i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                T bound = clazz.newInstance().bind(obj);
-                result.add(bound);
-            }
-            return result;
-        } catch (JSONException e) {
-            return new ArrayList<T>();
-        } catch (InstantiationException e) {
-            return new ArrayList<T>();
-        } catch (IllegalAccessException e) {
-            return new ArrayList<T>();
-        }
-    }
 
     /**
      * Get a new, random media_id for uploading media to Snapchat.

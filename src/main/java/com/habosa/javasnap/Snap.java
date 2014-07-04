@@ -37,8 +37,8 @@ public class Snap implements JSONBinder<Snap> {
     private int type;
     private int state;
     private int time;
-    private int senttime;
-    private int lastInteractionTime;
+    private long senttime;
+    private long lastInteractionTime;
 
     private String caption;
 
@@ -50,8 +50,8 @@ public class Snap implements JSONBinder<Snap> {
             this.id = obj.getString(ID_KEY);
             this.type = obj.getInt(TYPE_KEY);
             this.state = obj.getInt(STATE_KEY);
-            this.lastInteractionTime = obj.getInt(LAST_INTERACTION_TIME_KEY);
-            this.senttime = obj.getInt(SENTTIME_KEY);
+            this.lastInteractionTime = obj.getLong(LAST_INTERACTION_TIME_KEY);
+            this.senttime = obj.getLong(SENTTIME_KEY);
 
             if(obj.has(SENDER_KEY)){
                 this.sender = obj.getString(SENDER_KEY);
@@ -200,11 +200,11 @@ public class Snap implements JSONBinder<Snap> {
      *
      * @return last interaction time.
      */
-    public int getLastInteractionTime(){
+    public long getLastInteractionTime(){
         return this.lastInteractionTime;
     }
 
-    public int getSentTime() {
+    public long getSentTime() {
         return senttime;
     }
 
@@ -221,7 +221,7 @@ public class Snap implements JSONBinder<Snap> {
                 Integer.toString(type),
                 Integer.toString(state),
                 Integer.toString(time),
-                Integer.toString(senttime),
+                Long.toString(senttime),
                 caption
         };
         return Arrays.toString(attrs);
