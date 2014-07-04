@@ -58,6 +58,8 @@ public class Snapchat {
     private static final String RECIPIENT_USERNAMES = "recipient_usernames";
     private static final String ACTION_KEY = "action";
     private static final String FRIEND_KEY = "friend";
+    private static final String DISPLAY_KEY = "display";
+    private static final String MY_STORIES_KEY = "my_stories";
 
     /**
      * Paths for various Snapchat groups in loginObj_full
@@ -106,6 +108,7 @@ public class Snapchat {
     private String friendsTimestamp;
     private Friend[] friends;
     private Story[] stories;
+    private Story[] mystories;
     private Snap[] snaps;
     private Message[] messages;
     private long lastRefreshed;
@@ -176,11 +179,13 @@ public class Snapchat {
             this.snaps = null;
             this.messages = null;
             this.stories = null;
+            this.mystories = null;
             this.friends = null;
 
             getSnaps();
             getMessages();
             getStories();
+            getMyStories();
             getFriends();
 
             lastRefreshed = new Date().getTime();
@@ -257,6 +262,27 @@ public class Snapchat {
                 List<Story> stories = bindArray(stories_list, Story.class);
                 this.stories = stories.toArray(new Story[stories.size()]);
                 return this.stories;
+            } catch (JSONException ex) {
+                ex.printStackTrace();
+                return new Story[0];
+            }
+        }
+    }
+    
+    /**
+     * Get My Stories from Snapchat.
+     * @return a Story[]
+     */
+    public Story[] getMyStories() {
+        if(this.mystories != null){
+            return this.mystories;
+        }else{
+            try {
+                JSONArray mystories_list = new JSONArray();
+                JSONArray my_stories = this.loginObj_stories.getJSONArray(MY_STORIES_KEY);
+                List<Story> mystories = bindArray(my_stories, Story.class);
+                this.mystories = mystories.toArray(new Story[mystories.size()]);
+                return this.mystories;
             } catch (JSONException ex) {
                 ex.printStackTrace();
                 return new Story[0];
@@ -784,6 +810,40 @@ public class Snapchat {
                 if (resp.getBody().toString().toLowerCase().contains("Sorry!".toLowerCase())) {
                     return false;
                 }
+                return true;
+            }
+        } catch (UnirestException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    /**
+     * Set Display for a Friend
+     *
+     * @param friend username to edit.
+     * @param display display name to set.
+     * @return true if successful, otherwise false.
+     */
+    public boolean setFriendDisplay(String friend, String display){
+        try {
+            Map<String, Object> params = new HashMap<String, Object>();
+
+            Long timestamp = getTimestamp();
+            String reqToken = TokenLib.requestToken(this.authToken, timestamp);
+
+            //Add params
+            params.put(USERNAME_KEY, this.username);
+            params.put(TIMESTAMP_KEY, timestamp.toString());
+            params.put(REQ_TOKEN_KEY, reqToken);
+            params.put(ACTION_KEY, "display");
+            params.put(FRIEND_KEY, friend);
+            params.put(DISPLAY_KEY, display);
+
+            //Make the request
+            HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
+            System.out.println(resp.getBody().toString());
+            if (resp.getCode() == 200 || resp.getCode() == 201) {
                 return true;
             }
         } catch (UnirestException e) {
