@@ -1,5 +1,6 @@
 package com.habosa.javasnap;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -16,9 +17,8 @@ public class Story implements JSONBinder<Story> {
     private static final String STORY_KEY = "story";
     private static final String STORY_NOTES_KEY = "story_notes";
     private static final String STORY_EXTRAS_KEY = "story_extras";
-    private static final String VIEWER_KEY = "viewer";
-    private static final String SCREENSHOTTED_KEY = "screenshotted";
-    
+    private static final String TIMESTAMP_KEY = "timestamp";
+
     private static final String MEDIA_ID_KEY = "media_id";
     private static final String MEDIA_KEY_KEY = "media_key";
     private static final String MEDIA_IV_KEY = "media_iv";
@@ -28,6 +28,8 @@ public class Story implements JSONBinder<Story> {
     private static final String TIME_LEFT_KEY = "time_left";
     private static final String CAPTION_KEY = "caption_text_display";
     private static final String VIEWED_KEY = "viewed";
+    private static final String SCREENSHOT_COUNT_KEY = "screenshot_count";
+    private static final String VIEW_COUNT_KEY = "view_count";
 
     private String id;
     private String media_key;
@@ -40,72 +42,49 @@ public class Story implements JSONBinder<Story> {
     private boolean viewed;
     private boolean isMine;
     private Viewer[] viewers;
-    private int screenshots;
+    private int screenshot_count;
     private int views;
-    
+
     private String caption;
 
-    public Story() { }
+    public Story() {
+    }
 
 
     public Story bind(JSONObject obj) {
         try {
             JSONObject storyObj = obj.getJSONObject(STORY_KEY);
             try {
-              //Made this a seperate Try/Catch, as it fails for your own stories.
-              this.viewed = obj.getBoolean(VIEWED_KEY); //For some reason, this is not in the inner story json obj.
+                this.viewed = obj.getBoolean(VIEWED_KEY); //For some reason, this is not in the inner story json obj.
+                this.isMine = false; //Viewed key only exist for friend's stories.
             } catch (JSONException e) {
-              e.printStackTrace();
-            }
-            try {
-                this.id = storyObj.getString(MEDIA_ID_KEY);
-                this.media_key = storyObj.getString(MEDIA_KEY_KEY);
-                this.media_iv = storyObj.getString(MEDIA_IV_KEY);
-                this.type = storyObj.getInt(MEDIA_TYPE_KEY);
-                this.sender = storyObj.getString(SENDER_KEY);
-                this.timestamp = storyObj.getLong(TIMESTAMP_KEY);
-            } catch (JSONException e) {
-                e.printStackTrace();
+                this.isMine = true;
             }
 
-            try {
-                this.caption = storyObj.getString(CAPTION_KEY);
-            } catch (JSONException e) {
-                this.caption = "";
-            }
 
-            // Check for time separately because it may not exist.
-            try {
-                this.time = storyObj.getInt(TIME_KEY);
-                this.time_left = storyObj.getInt(TIME_LEFT_KEY);
-            } catch (JSONException e) {
-                e.printStackTrace();
+            this.id = storyObj.getString(MEDIA_ID_KEY);
+            this.media_key = storyObj.getString(MEDIA_KEY_KEY);
+            this.media_iv = storyObj.getString(MEDIA_IV_KEY);
+            this.type = storyObj.getInt(MEDIA_TYPE_KEY);
+            this.sender = storyObj.getString(SENDER_KEY);
+            this.timestamp = storyObj.getLong(TIMESTAMP_KEY);
+            this.time_left = storyObj.getInt(TIME_LEFT_KEY);
+            this.caption = storyObj.getString(CAPTION_KEY);
+            this.time = storyObj.getInt(TIME_KEY);
+
+            if (this.isMine) {
+                //Who have seen my story
+                JSONArray notesObj = obj.getJSONArray(STORY_NOTES_KEY);
+                List<Viewer> viewers = Snapchat.bindArray(notesObj, Viewer.class);
+                this.viewers = viewers.toArray(new Viewer[viewers.size()]);
+                //Statistics of my story
+                JSONObject extrasObj = obj.getJSONObject(STORY_EXTRAS_KEY);
+                screenshot_count = extrasObj.getInt(SCREENSHOT_COUNT_KEY);
+                views = extrasObj.getInt(VIEW_COUNT_KEY);
             }
         } catch (JSONException e) {
+            System.out.println("Error parsing story : " + obj.toString());
             e.printStackTrace();
-        }
-        try {
-            JSONArray notesObj = obj.getJSONArray(STORY_NOTES_KEY);
-            List<Viewer> viewers = Snapchat.bindArray(notesObj, Viewer.class);
-            this.viewers = viewers.toArray(new Viewer[viewers.size()]);
-            if(this.viewers != null){
-              isMine = true;
-            }
-            else{
-              isMine = false;
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            isMine = false;
-        }
-        try {
-            JSONObject extrasObj = obj.getJSONObject(STORY_EXTRAS_KEY);
-            screenshots = extrasObj.getInt("screenshot_count");
-            views = extrasObj.getInt("view_count");
-        } catch (JSONException e) {
-            e.printStackTrace();
-            screenshots = 0;
-            views = 0;
         }
         return this;
     }
@@ -119,8 +98,8 @@ public class Story implements JSONBinder<Story> {
      */
     public static Story[] filterDownloadable(Story[] input) {
         List<Story> downloadable = new ArrayList<Story>();
-        for(Story s: input){
-            if(s.isDownloadable()){
+        for (Story s : input) {
+            if (s.isDownloadable()) {
                 downloadable.add(s);
             }
         }
@@ -133,7 +112,7 @@ public class Story implements JSONBinder<Story> {
      *
      * @return true if the story is downloadable.
      */
-    public boolean isDownloadable(){
+    public boolean isDownloadable() {
         return true;
     }
 
@@ -196,7 +175,7 @@ public class Story implements JSONBinder<Story> {
      *
      * @return true if seen, otherwise false.
      */
-    public boolean isViewed(){
+    public boolean isViewed() {
         return this.viewed;
     }
 
@@ -221,7 +200,7 @@ public class Story implements JSONBinder<Story> {
     public int getTimeLeft() {
         return time_left;
     }
-    
+
     /**
      * Get the timestamp of creation date for this story.
      *
@@ -239,16 +218,16 @@ public class Story implements JSONBinder<Story> {
     public String getCaption() {
         return caption;
     }
-    
+
     /**
      * If the story belongs to us, thus will have viewers...
      *
      * @return boolean
      */
-    public boolean isMine(){
+    public boolean isMine() {
         return this.isMine;
     }
-    
+
     /**
      * Get the viewers of this story.
      *
@@ -257,7 +236,7 @@ public class Story implements JSONBinder<Story> {
     public Viewer[] getViewers() {
         return viewers;
     }
-    
+
     /**
      * Get the views count of this story.
      *
@@ -266,14 +245,14 @@ public class Story implements JSONBinder<Story> {
     public int getViewCount() {
         return views;
     }
-    
+
     /**
      * Get the screenshots count of this story.
      *
      * @return int the screenshot count or 0 if not my story.
      */
     public int getScreenshotCount() {
-        return screenshots;
+        return screenshot_count;
     }
 
     @Override
@@ -285,7 +264,7 @@ public class Story implements JSONBinder<Story> {
                 Integer.toString(time),
                 Integer.toString(time_left),
                 Integer.toString(views),
-                Integer.toString(screenshots),
+                Integer.toString(screenshot_count),
                 caption
         };
         return Arrays.toString(attrs);

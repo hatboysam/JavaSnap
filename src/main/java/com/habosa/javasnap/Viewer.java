@@ -31,16 +31,16 @@ public class Viewer implements JSONBinder<Viewer> {
     }
 
     /**
-     * Has the story been screenshoted?
+     * Has user screenshoted this story.
      *
-     * @return true if it is screenshotted.
+     * @return true if user has screenshotted.
      */
     public boolean isScreenshoted(){
         return screenshotted;
     }
 
     /**
-     * Get this viewers username.
+     * Get this viewer username.
      *
      * @return the viewer username.
      */
@@ -48,6 +48,11 @@ public class Viewer implements JSONBinder<Viewer> {
         return viewer;
     }
 
+    /**
+     * Get when the user has seen this story.
+     *
+     * @return unix timestamp of when the user has seen this story.
+     */
     public Long getTimestamp() {
         return timestamp;
     }
