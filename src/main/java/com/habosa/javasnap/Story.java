@@ -69,7 +69,7 @@ public class Story implements JSONBinder<Story> {
             this.sender = storyObj.getString(SENDER_KEY);
             this.timestamp = storyObj.getLong(TIMESTAMP_KEY);
             this.time_left = storyObj.getInt(TIME_LEFT_KEY);
-            this.caption = storyObj.getString(CAPTION_KEY);
+            this.caption = storyObj.has(CAPTION_KEY) ? storyObj.getString(CAPTION_KEY) : null;
             this.time = storyObj.getInt(TIME_KEY);
 
             if (this.isMine) {
