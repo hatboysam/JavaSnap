@@ -105,7 +105,7 @@ public class Snapchat {
 
     private String username;
     private String authToken;
-    private String friendsTimestamp;
+    private long friendsTimestamp;
     private Friend[] friends;
     private Story[] stories;
     private Story[] mystories;
@@ -125,7 +125,7 @@ public class Snapchat {
             //Setup all local variables
             this.username = this.loginObj_updates.getString(USERNAME_KEY);
             this.authToken = this.loginObj_updates.getString(AUTH_TOKEN_KEY);
-            this.friendsTimestamp = this.loginObj_updates.getString(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
+            this.friendsTimestamp = this.loginObj_updates.getLong(Snapchat.ADDED_FRIENDS_TIMESTAMP_KEY);
         } catch (JSONException e) {
             //TODO Something is wrong with the loginObj_full
             e.printStackTrace();
