@@ -34,7 +34,7 @@ public class Main {
         System.out.println("\t2) Send a snap");
         System.out.println("\t3) Set a Story");
         System.out.println("\t4) Download Stories");
-        ystem.out.println("\t5) Send Mass message");
+        System.out.println("\t5) Send Mass message");
         System.out.println();
 
         int option = scanner.nextInt();
