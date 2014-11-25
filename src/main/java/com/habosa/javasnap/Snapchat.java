@@ -84,7 +84,7 @@ public class Snapchat {
     private static final String UPDATE_SNAPS_PATH = "bq/update_snaps";
     private static final String CHAT_TYPING_PATH = "bq/chat_typing";
     private static final String FRIEND_PATH = "bq/friend";
-    
+
     /**
      * Static members for forming HTTP requests.
      */
@@ -92,8 +92,8 @@ public class Snapchat {
     private static final String JSON_TYPE_KEY = "accept";
     private static final String JSON_TYPE = "application/json";
     private static final String USER_AGENT_KEY = "User-Agent";
-    private static final String USER_AGENT = "Snapchat/3.0.2 (Nexus 4; Android 18; gzip)";
-    
+    private static final String USER_AGENT = "Snapchat/8.0.1 Beta (A0001; Android 19; gzip)";
+
     /**
      * Local variables
      */
@@ -112,7 +112,7 @@ public class Snapchat {
     private Snap[] snaps;
     private Message[] messages;
     private long lastRefreshed;
-    
+
     /**
      * Build the Snapchat object
      * @see Snapchat#login(String, String)
@@ -156,7 +156,7 @@ public class Snapchat {
         try {
             HttpResponse<JsonNode> resp = requestJson(LOGIN_PATH, params, null);
             JSONObject obj = resp.getBody().getObject();
-            if(obj.has(UPDATES_RESPONSE_KEY) && obj.getJSONObject(UPDATES_RESPONSE_KEY).getBoolean(LOGGED_KEY)){
+            if (obj.has(UPDATES_RESPONSE_KEY) && obj.getJSONObject(UPDATES_RESPONSE_KEY).getBoolean(LOGGED_KEY)){
                 return new Snapchat(obj);
             }
             return null;
@@ -268,7 +268,7 @@ public class Snapchat {
             }
         }
     }
-    
+
     /**
      * Get My Stories from Snapchat.
      * @return a Story[]
@@ -304,7 +304,7 @@ public class Snapchat {
             params.put(TIMESTAMP_KEY, timestamp);
             params.put(REQ_TOKEN_KEY, TokenLib.requestToken(authToken, timestamp));
             params.put(ID_KEY, snap.getId());
-            
+
             HttpResponse<InputStream> resp = requestBinary(BLOB_PATH, params, null);
             InputStream is = resp.getBody();
             byte[] encryptedBytes = IOUtils.toByteArray(is);
@@ -421,7 +421,7 @@ public class Snapchat {
         }
         return false;
     }
-    
+
     /**
      * Delete a friend
      *
@@ -520,7 +520,7 @@ public class Snapchat {
         }
     }
 
-     /**
+    /**
      * Send a snap that has already been uploaded.
      *
      * @param mediaId the media_id of the uploaded snap.
@@ -843,7 +843,7 @@ public class Snapchat {
         }
         return false;
     }
-    
+
     /**
      * Set Display for a Friend
      *
@@ -892,7 +892,7 @@ public class Snapchat {
         String uuid = UUID.randomUUID().toString();
         return username.toUpperCase() + "~" + uuid;
     }
-    
+
     /**
      * Get a new timestamp to use in a request.
      *
@@ -950,6 +950,7 @@ public class Snapchat {
         HttpRequest req = Unirest.get(BASE_URL + path)
                 .header(JSON_TYPE_KEY, JSON_TYPE)
                 .header(USER_AGENT_KEY, USER_AGENT);
+
 
         // Execute and return as bytes
         HttpResponse<InputStream> resp = req.asBinary();
