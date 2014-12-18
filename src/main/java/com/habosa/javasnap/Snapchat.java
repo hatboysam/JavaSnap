@@ -91,7 +91,7 @@ public class Snapchat {
     private static final String BASE_URL = "https://feelinsonice-hrd.appspot.com/";
     private static final String JSON_TYPE_KEY = "accept";
     private static final String JSON_TYPE = "application/json";
-    private static final String USER_AGENT_KEY = "User-Agent";
+    private static final String USER_AGENT_KEY = "user-agent";
     private static final String USER_AGENT = "Snapchat/8.0.1 Beta (A0001; Android 19; gzip)";
 
     /**
@@ -411,7 +411,7 @@ public class Snapchat {
             //Make the request
             HttpResponse<String> resp = requestString(CHAT_TYPING_PATH, params, null);
             System.out.println(resp.getBody().toString());
-            if (resp.getCode() == 200 || resp.getCode() == 201) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 201) {
                 return true;
             }
         } catch (UnirestException e) {
@@ -446,7 +446,7 @@ public class Snapchat {
             //Make the request
             HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
             //The request seems to be a success even if you weren't already friends...
-            if (resp.getCode() == 200 || resp.getCode() == 201) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 201) {
                 return true;
             }
         } catch (UnirestException e) {
@@ -579,7 +579,7 @@ public class Snapchat {
 
             // Execute request
             HttpResponse<String> resp = requestString(path, params, null);
-            if (resp.getCode() == 200 || resp.getCode() == 202) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 202) {
                 return true;
             } else {
                 return false;
@@ -624,7 +624,7 @@ public class Snapchat {
 
             // Execute request
             HttpResponse<String> resp = requestString(STORY_PATH, params, null);
-            if (resp.getCode() == 200 || resp.getCode() == 202) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 202) {
                 return true;
             } else {
                 return false;
@@ -735,7 +735,7 @@ public class Snapchat {
 
             // Execute request
             HttpResponse<String> resp = requestString(path, params, null);
-            if (resp.getCode() == 200 || resp.getCode() == 202) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 202) {
                 return true;
             } else {
                 return false;
@@ -785,10 +785,10 @@ public class Snapchat {
 
             // Perform request and check for 200
             HttpResponse<String> resp = requestString(UPLOAD_PATH, params, encryptedFile);
-            if (resp.getCode() == 200) {
+            if (resp.getStatus() == 200) {
                 return mediaId;
             } else {
-                System.out.println("Upload failed, Response Code: " + resp.getCode());
+                System.out.println("Upload failed, Response Code: " + resp.getStatus());
                 return null;
             }
         } catch (IOException e) {
@@ -832,7 +832,7 @@ public class Snapchat {
 
             //Make the request
             HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
-            if (resp.getCode() == 200 || resp.getCode() == 201) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 201) {
                 if (resp.getBody().toString().toLowerCase().contains("Sorry!".toLowerCase())) {
                     return false;
                 }
@@ -869,7 +869,7 @@ public class Snapchat {
             //Make the request
             HttpResponse<String> resp = requestString(FRIEND_PATH, params, null);
             System.out.println(resp.getBody().toString());
-            if (resp.getCode() == 200 || resp.getCode() == 201) {
+            if (resp.getStatus() == 200 || resp.getStatus() == 201) {
                 return true;
             }
         } catch (UnirestException e) {
