@@ -34,6 +34,7 @@ public class Main {
         System.out.println("\t2) Send a snap");
         System.out.println("\t3) Set a Story");
         System.out.println("\t4) Download Stories");
+        System.out.println("\t5) Send Mass message");
         System.out.println();
 
         int option = scanner.nextInt();
@@ -71,6 +72,18 @@ public class Main {
                 }
                 System.out.println("Done.");
             break;
+            case 5:
+                System.out.println("Enter path to image file:");
+                String snapFileName = scanner.nextLine();
+                System.out.println("Enter recipients Snapchat usernames seperated by a comma:");
+                String recipient = scanner.nextLine();
+                String[] parts = recipient.split(",");
+                int size = parts.length;
+                for (int i=0; i<size; i++)
+                {
+                    sendSnap(username, parts[i], snapFileName);
+                }
+                
             default:
                 System.out.println("Invalid option.");
             break;
