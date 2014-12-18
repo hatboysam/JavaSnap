@@ -92,7 +92,7 @@ public class Snapchat {
     private static final String JSON_TYPE_KEY = "accept";
     private static final String JSON_TYPE = "application/json";
     private static final String USER_AGENT_KEY = "user-agent";
-    private static final String USER_AGENT = "Snapchat/8.0.1 Beta (A0001; Android 19; gzip)";
+    private static final String USER_AGENT = "Snapchat/8.1.0.8 Beta (A0001; Android 21; gzip)";
 
     /**
      * Local variables
