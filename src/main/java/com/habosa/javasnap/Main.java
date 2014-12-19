@@ -111,8 +111,13 @@ public class Main {
         System.out.println("Sending...");
         boolean postStory = false; //set as true to make this your story as well...
 
+        boolean isVideo = false;
+        if(filename.toLowerCase().endsWith("mp4")){
+            isVideo = true;
+        }
+
         // TODO(samstern): User-specified time, not automatically 10 seconds
-        boolean result = snapchat.sendSnap(file, recipients, false, postStory, 10);
+        boolean result = snapchat.sendSnap(file, recipients, isVideo, postStory, 10);
         if (result) {
             System.out.println("Sent.");
         } else {

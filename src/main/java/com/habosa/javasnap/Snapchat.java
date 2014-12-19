@@ -49,7 +49,8 @@ public class Snapchat {
     private static final String DATA_KEY = "data";
     private static final String ZIPPED_KEY = "zipped";
     private static final String TIME_KEY = "time";
-    private static final String RECIPIENT_KEY = "recipient";
+    private static final String RECIPIENTS_KEY = "recipients";
+    private static final String FEATURES_MAP_KEY = "features_key";
     private static final String ADDED_FRIENDS_TIMESTAMP_KEY = "added_friends_timestamp";
     private static final String JSON_KEY = "json";
     private static final String EVENTS_KEY = "events";
@@ -74,8 +75,8 @@ public class Snapchat {
      */
     private static final String LOGIN_PATH = "loq/login";
     private static final String ALL_UPDATES_PATH = "/loq/all_updates";
-    private static final String UPLOAD_PATH = "bq/upload";
-    private static final String SEND_PATH = "ph/send"; //TODO : UPDATE PATH
+    private static final String UPLOAD_PATH = "ph/upload";
+    private static final String SEND_PATH = "loq/send";
     private static final String STORY_PATH = "bq/post_story";
     private static final String DOUBLE_PATH = "bq/double_post"; //TODO : UPDATE PATH
     private static final String BLOB_PATH = "ph/blob";
@@ -546,15 +547,11 @@ public class Snapchat {
                 //TODO : Send to story only
                 return false;
             }
-            sb.append(recipients.get(0));
-            for (int i = 1; i < recipients.size(); i++) {
-                String recip = recipients.get(i);
-                if (recip != null) {
-                    sb.append(",");
-                    sb.append(recip);
-                }
+
+            JSONArray recipientsArray = new JSONArray();
+            for(String recipient : recipients){
+                recipientsArray.put(recipient);
             }
-            String recipString = sb.toString();
 
             // Make parameter map
             Map<String, Object> params = new HashMap<String, Object>();
@@ -562,9 +559,10 @@ public class Snapchat {
             params.put(TIMESTAMP_KEY, timestamp.toString());
             params.put(REQ_TOKEN_KEY, requestToken);
             params.put(MEDIA_ID_KEY, mediaId);
-            params.put(TIME_KEY, Integer.toString(snapTime));
-            params.put(RECIPIENT_KEY, recipString);
+            params.put(TIME_KEY, Double.toString(snapTime));
+            params.put(RECIPIENTS_KEY, recipientsArray.toString());
             params.put(ZIPPED_KEY, "0");
+            params.put(FEATURES_MAP_KEY, new JSONObject().toString());
 
             // Sending path
             String path = SEND_PATH;
