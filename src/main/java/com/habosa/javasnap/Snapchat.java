@@ -50,7 +50,7 @@ public class Snapchat {
     private static final String ZIPPED_KEY = "zipped";
     private static final String TIME_KEY = "time";
     private static final String RECIPIENTS_KEY = "recipients";
-    private static final String FEATURES_MAP_KEY = "features_key";
+    private static final String FEATURES_MAP_KEY = "features_map";
     private static final String ADDED_FRIENDS_TIMESTAMP_KEY = "added_friends_timestamp";
     private static final String JSON_KEY = "json";
     private static final String EVENTS_KEY = "events";
