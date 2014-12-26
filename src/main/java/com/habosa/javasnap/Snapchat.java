@@ -94,6 +94,8 @@ public class Snapchat {
     private static final String JSON_TYPE = "application/json";
     private static final String USER_AGENT_KEY = "user-agent";
     private static final String USER_AGENT = "Snapchat/8.1.0.8 Beta (A0001; Android 21; gzip)";
+    private static final String ACCEPT_LANGUAGE_KEY = "Accept-Language";
+    private static final String ACCEPT_LOCALE_KEY = "Accept-Locale";
 
     /**
      * Local variables
@@ -901,11 +903,25 @@ public class Snapchat {
         return timestamp;
     }
 
+    public static String acceptLanguageString() {
+        Locale defaultLocale = Locale.getDefault();
+        String langStr = defaultLocale.getLanguage();
+        if (!langStr.equals(Locale.ENGLISH.getLanguage())) {
+            langStr = langStr + ";q=1, en;q=0.9";
+        }
+        
+        return langStr;
+    }
+
     private static MultipartBody prepareRequest(String path, Map<String, Object> params, File file) {
+        Locale defaultLocale = Locale.getDefault();
+        
         // Set up a JSON request
         MultipartBody req = Unirest.post(BASE_URL + path)
                 .header(JSON_TYPE_KEY, JSON_TYPE)
                 .header(USER_AGENT_KEY, USER_AGENT)
+                .header(ACCEPT_LANGUAGE_KEY, acceptLanguageString())
+                .header(ACCEPT_LOCALE_KEY, defaultLocale.toString())
                 .fields(params);
 
         // Add file if there is one
