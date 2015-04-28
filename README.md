@@ -12,7 +12,7 @@ JavaSnap provides a simple Java interface to the Snapchat API, which has been un
 
 Build a `jar` with Maven using:
 
-    mvn clean compile assembly:assembly
+    mvn clean compile package
 	
 ### Command Line Execution
 Run the `jar` in `target/` with:
