@@ -1,3 +1,9 @@
+[![deprecated](http://badges.github.io/stability-badges/dist/deprecated.svg)](http://github.com/badges/stability-badges)
+
+**WARNING:** This library is deprecated and has not been in working order for years.  Issues will not be answered.
+
+<hr />
+
 # JavaSnap - Unofficial Java API Client for Snapchat
 
 ## Overview
